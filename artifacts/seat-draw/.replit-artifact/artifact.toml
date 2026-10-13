@@ -1,0 +1,28 @@
+kind = "web"
+previewPath = "/"
+title = "자리 뽑기"
+description = "행과 열, 참가자 번호 범위, 제외 번호와 앞자리 우선 여부를 설정하고 3초 카운트다운 뒤 무작위 좌석 배치를 확인하는 자리 뽑기 앱입니다."
+version = "1.0.0"
+id = "artifacts/seat-draw"
+router = "path"
+
+[[services]]
+name = "web"
+paths = [ "/" ]
+localPort = 20434
+
+[services.development]
+run = "pnpm --filter @workspace/seat-draw run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/seat-draw", "run", "build" ]
+serve = "static"
+publicDir = "artifacts/seat-draw/dist/public"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "20434"
+BASE_PATH = "/"
