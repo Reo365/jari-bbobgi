@@ -192,6 +192,10 @@
 .panel-title { display:flex; align-items:center; gap:10px; margin:0; color:#25473d; font-family:'Gowun Dodum',sans-serif; font-size:21px; font-weight:700; letter-spacing:-.045em; }
 .field-group { margin-bottom:20px; }
 .field-label { display:flex; align-items:center; justify-content:space-between; gap:8px; margin-bottom:9px; color:#374d44; font-weight:700; font-size:15px; }
+.settings-group { margin-bottom:22px; padding-top:18px; border-top:1px solid rgba(52,74,64,.1); }
+.settings-group:first-of-type { padding-top:0; border-top:0; }
+.settings-group-title { margin:0 0 14px; color:#718078; font-family:'DM Mono',monospace; font-size:11px; font-weight:500; letter-spacing:.08em; text-transform:uppercase; }
+.settings-summary { margin:3px 0 0; color:#8a958c; font-size:12px; line-height:1.5; }
 .dimensions { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
 .number-wrap { position:relative; }
 .number-input, .exclude-input { width:100%; box-sizing:border-box; border:1px solid #d9ded1; border-radius:10px; background:#fbfaf4; color:#26483e; outline:none; transition:border-color .18s, box-shadow .18s, background .18s; }
@@ -242,8 +246,14 @@
 .result-panel { min-height:508px; padding:27px; overflow:hidden; }
 .result-heading { display:flex; align-items:flex-start; justify-content:space-between; gap:16px; margin-bottom:20px; }
 .result-title { margin:0; color:#25473d; font-family:'Gowun Dodum',sans-serif; font-size:22px; letter-spacing:-.045em; }
+.result-subtitle { margin:4px 0 0; color:#7b887f; font-size:12px; }
+.result-heading-actions { display:flex; flex-wrap:wrap; justify-content:flex-end; align-items:center; gap:8px; }
 .result-count { display:flex; align-items:center; gap:7px; flex:none; color:#728077; font-size:13px; font-family:'DM Mono',monospace; background:#f1f1e8; border-radius:99px; padding:8px 11px; }
 .result-count b { color:#315d50; font-weight:500; }
+.result-actions { display:flex; align-items:center; gap:4px; }
+.result-action { display:flex; align-items:center; gap:5px; min-height:31px; padding:6px 8px; border:1px solid #dfe4d8; border-radius:7px; background:#fffef9; color:#587066; font-size:11px; }
+.result-action:hover { border-color:#a9c1ae; background:#f3f7ef; color:#28594d; }
+.result-action:focus-visible, .history-clear:focus-visible, .history-load:focus-visible, .history-delete:focus-visible { outline:3px solid rgba(57,115,99,.25); outline-offset:2px; }
 .blackboard { position:relative; display:grid; place-items:center; width:min(76%,360px); min-height:36px; margin:0 auto 18px; border:3px solid #d6c9a8; border-bottom-width:5px; border-radius:5px 5px 7px 7px; background:linear-gradient(135deg,#2c6253,#1d493e); color:#f6f2df; box-shadow:0 3px 0 #c6b995,0 6px 12px rgba(37,75,62,.12); }
 .blackboard span { font-family:'Gowun Dodum',sans-serif; font-size:15px; font-weight:700; letter-spacing:.08em; }
 .preview-content { display:flex; flex-direction:column; }
@@ -303,6 +313,8 @@
   .workspace { grid-template-columns:1fr; gap:15px; }
   .setup-panel, .result-panel { padding:22px; }
   .result-panel { min-height:440px; }
+  .result-heading { align-items:flex-start; }
+  .result-heading-actions { width:100%; justify-content:flex-start; }
 }
 @media (max-width: 440px) {
   .page-wrap { width:calc(100% - 28px); }
@@ -313,4 +325,18 @@
 }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { scroll-behavior:auto !important; animation-duration:.01ms !important; animation-iteration-count:1 !important; transition-duration:.01ms !important; }
+}
+@media print {
+  @page { margin: 14mm; }
+  body { min-width:0; background:#fff; }
+  .page-shell { min-height:0; background:#fff; }
+  .page-shell::before, .masthead, .setup-panel, .result-actions, .result-subtitle, .error-banner, .preview-note, .result-note, .priority-legend, .drag-helper { display:none !important; }
+  .page-wrap { width:100%; }
+  .workspace { display:block; padding:0; }
+  .result-panel { min-height:0; padding:0; border:0; box-shadow:none; overflow:visible; }
+  .result-heading { margin-bottom:18px; }
+  .result-heading-actions { justify-content:flex-end; }
+  .grid-scroll { overflow:visible; padding:0; }
+  .seat-grid { width:100%; gap:7px; }
+  .seat { min-width:0; min-height:58px; box-shadow:none; animation:none !important; }
 }

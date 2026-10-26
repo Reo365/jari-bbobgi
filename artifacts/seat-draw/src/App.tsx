@@ -7,9 +7,12 @@ import NotFound from '@/pages/not-found';
 import {
   AlertCircle,
   Check,
+  Copy,
   History,
   Info,
   LayoutGrid,
+  Printer,
+  Save,
   Shuffle,
   TicketCheck,
   Trash2,
@@ -102,6 +105,8 @@ function Home() {
   const [dragPosition, setDragPosition] = useState<{ x: number; y: number } | null>(null);
   const [dragOrigin, setDragOrigin] = useState<{ x: number; y: number } | null>(null);
   const [activeRecordId, setActiveRecordId] = useState<string | null>(null);
+  const [copyFeedback, setCopyFeedback] = useState(false);
+  const [saveFeedback, setSaveFeedback] = useState(false);
   const draggedSeatRef = useRef<number | null>(null);
   const dragOverSeatRef = useRef<number | null>(null);
   const pendingSeatRef = useRef<number | null>(null);
@@ -109,6 +114,7 @@ function Home() {
   const pressTargetRef = useRef<HTMLDivElement | null>(null);
   const pressPointerIdRef = useRef<number | null>(null);
   const timeoutIds = useRef<number[]>([]);
+  const feedbackTimeoutIds = useRef<number[]>([]);
 
   const rowCount = Number(rows);
   const columnCount = Number(columns);
@@ -144,6 +150,7 @@ function Home() {
 
   useEffect(() => () => {
     timeoutIds.current.forEach(window.clearTimeout);
+    feedbackTimeoutIds.current.forEach(window.clearTimeout);
   }, []);
 
   useEffect(() => {
@@ -283,6 +290,42 @@ function Home() {
     window.localStorage.removeItem(HISTORY_STORAGE_KEY);
   };
 
+  const formatResult = () => {
+    if (!assignment) return '';
+    const lines = Array.from({ length: rowCount }, (_, rowIndex) => {
+      const row = assignment.slice(rowIndex * columnCount, (rowIndex + 1) * columnCount)
+        .map((number, columnIndex) => {
+          const seatNumber = rowIndex * columnCount + columnIndex + 1;
+          if (excludedSeatNumbers.has(seatNumber)) return '제외';
+          return number === null ? '미배정' : String(number);
+        });
+      return `${rowIndex + 1}행: ${row.join(', ')}`;
+    });
+    const notes = [
+      excludedSummary.length > 0 ? `제외 참가자: ${excludedSummary.join(', ')}` : '',
+      excludedSeatSummary.length > 0 ? `제외 좌석: ${excludedSeatSummary.join(', ')}` : '',
+    ].filter(Boolean);
+    return ['자리 배치 결과', '', ...lines, ...(notes.length > 0 ? ['', ...notes] : [])].join('\n');
+  };
+
+  const copyResult = async () => {
+    if (!assignment) return;
+    try {
+      await navigator.clipboard.writeText(formatResult());
+      setCopyFeedback(true);
+      feedbackTimeoutIds.current.push(window.setTimeout(() => setCopyFeedback(false), 1800));
+    } catch {
+      setDrawError('결과를 복사하지 못했어요. 브라우저의 클립보드 권한을 확인해 주세요.');
+    }
+  };
+
+  const saveCurrentResult = () => {
+    if (!assignment) return;
+    saveRecord(assignment, activeRecordId ?? undefined);
+    setSaveFeedback(true);
+    feedbackTimeoutIds.current.push(window.setTimeout(() => setSaveFeedback(false), 1800));
+  };
+
   const generate = () => {
     setDrawError('');
     if (countdown !== null) return;
@@ -373,7 +416,9 @@ function Home() {
               <h2 className="panel-title" id="setup-title"><LayoutGrid size={18} /> 배정 조건</h2>
             </div>
 
-            <div className="field-group">
+            <section className="settings-group" aria-labelledby="basic-settings-title">
+              <h3 className="settings-group-title" id="basic-settings-title">기본 배정</h3>
+              <div className="field-group">
               <div className="field-label"><label htmlFor="rows">좌석 배열</label></div>
               <div className="dimensions">
                 <div className="number-wrap">
@@ -385,25 +430,28 @@ function Home() {
                   <span className="number-suffix">열</span>
                 </div>
               </div>
-            </div>
+              </div>
 
-            <div className="field-group">
+              <div className="field-group">
               <div className="field-label"><label htmlFor="participant-count">참가자 수</label></div>
               <div className="number-wrap">
                 <input className="number-input" id="participant-count" data-testid="input-participant-count" type="number" min="1" max="500" step="1" value={participantCount} onChange={(event) => { setParticipantCount(event.target.value); setAssignment(null); setDrawError(''); }} aria-describedby="pool-helper" disabled={isCounting} />
                 <span className="number-suffix">명</span>
               </div>
               <p className="helper" id="pool-helper">번호는 1부터 참가자 수까지 사용합니다.</p>
-            </div>
+              </div>
 
-            <div className="pool-hint" data-testid="text-eligible-count">
+              <div className="pool-hint" data-testid="text-eligible-count">
               <Check size={14} />
               <span>배정 가능</span>
               <strong>{Number.isFinite(eligibleCount) ? eligibleCount : 0}명</strong>
               <span>· 좌석 {actualSeatCount}개</span>
-            </div>
+              </div>
+            </section>
 
-            <div className="field-group">
+            <section className="settings-group" aria-labelledby="excluded-settings-title">
+              <h3 className="settings-group-title" id="excluded-settings-title">제외 설정</h3>
+              <div className="field-group">
               <div className="field-label"><label htmlFor="excluded-numbers">제외 번호</label></div>
               <input
                 className="exclude-input"
@@ -426,9 +474,12 @@ function Home() {
                 </div>
               )}
               <p className="helper" id="excluded-helper">쉼표로 구분해 입력해요. 중복 번호는 한 번만 제외됩니다.</p>
-            </div>
+              </div>
+              <p className="settings-summary">제외 좌석 {excludedSeatSummary.length}개 · 미리보기에서 좌석을 누르면 지정됩니다.</p>
+            </section>
 
-            <div className="priority-settings">
+            <section className="settings-group priority-settings" aria-labelledby="priority-settings-title">
+              <h3 className="settings-group-title" id="priority-settings-title">우선 배정</h3>
               <label className="priority-box" htmlFor="front-priority">
                 <input id="front-priority" data-testid="toggle-front-priority" type="checkbox" checked={frontPriority} onChange={(event) => { setFrontPriority(event.target.checked); setAssignment(null); setDrawError(''); }} disabled={isCounting} />
                 <span className="switch" aria-hidden="true" />
@@ -475,7 +526,7 @@ function Home() {
                   <p className="helper" id="priority-helper">지정한 번호는 무작위로 앞자리에 배정됩니다.</p>
                 </div>
               )}
-            </div>
+            </section>
 
             <section className="history-section" aria-labelledby="history-title">
               <div className="history-heading">
@@ -515,8 +566,24 @@ function Home() {
             <div className="result-heading">
               <div>
                 <h2 className="result-title" id="result-title">{assignment ? '추첨 결과' : '자리 미리보기'}</h2>
+                {assignment && <p className="result-subtitle">배정 결과는 자동 저장됩니다.</p>}
               </div>
-              <div className="result-count" data-testid="text-seat-count"><LayoutGrid size={13} /><b>{assignment ? seats.length : actualSeatCount}</b>석</div>
+              <div className="result-heading-actions">
+                <div className="result-count" data-testid="text-seat-count"><LayoutGrid size={13} /><b>{assignment ? seats.length : actualSeatCount}</b>석</div>
+                {assignment && (
+                  <div className="result-actions" aria-label="추첨 결과 작업">
+                    <button className="result-action" type="button" onClick={saveCurrentResult} title="결과 저장">
+                      <Save size={14} /> <span>{saveFeedback ? '저장됨' : '저장'}</span>
+                    </button>
+                    <button className="result-action" type="button" onClick={copyResult} title="결과 복사">
+                      <Copy size={14} /> <span>{copyFeedback ? '복사됨' : '복사'}</span>
+                    </button>
+                    <button className="result-action" type="button" onClick={() => window.print()} title="결과 인쇄">
+                      <Printer size={14} /> <span>인쇄</span>
+                    </button>
+                  </div>
+                )}
+              </div>
             </div>
 
             {drawError && <div className="error-banner" role="alert" data-testid="status-draw-error">{drawError}</div>}
