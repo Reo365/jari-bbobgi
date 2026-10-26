@@ -7,10 +7,12 @@ import NotFound from '@/pages/not-found';
 import {
   AlertCircle,
   Check,
+  History,
   Info,
   LayoutGrid,
   Shuffle,
   TicketCheck,
+  X,
 } from 'lucide-react';
 import {
   Route,
@@ -20,6 +22,23 @@ import {
 } from 'wouter';
 
 const queryClient = new QueryClient();
+const HISTORY_STORAGE_KEY = 'jari-bbobgi-draw-history';
+const MAX_HISTORY_ITEMS = 10;
+
+type Assignment = Array<number | null>;
+
+type DrawRecord = {
+  id: string;
+  createdAt: string;
+  rows: number;
+  columns: number;
+  participantCount: number;
+  excludedNumbers: number[];
+  priorityNumbers: number[];
+  frontPriority: boolean;
+  excludedSeats: number[];
+  assignment: Assignment;
+};
 
 function shuffle<T>(items: T[]): T[] {
   const result = [...items];
@@ -45,6 +64,25 @@ function parseNumberList(value: string, participantCount: number) {
   return { invalid, numbers };
 }
 
+function readDrawHistory(): DrawRecord[] {
+  try {
+    const stored = window.localStorage.getItem(HISTORY_STORAGE_KEY);
+    if (!stored) return [];
+    const parsed: unknown = JSON.parse(stored);
+    if (!Array.isArray(parsed)) return [];
+    return parsed.filter((item): item is DrawRecord => {
+      if (!item || typeof item !== 'object') return false;
+      const record = item as Partial<DrawRecord>;
+      return typeof record.id === 'string'
+        && typeof record.createdAt === 'string'
+        && Array.isArray(record.assignment)
+        && Array.isArray(record.excludedSeats);
+    }).slice(0, MAX_HISTORY_ITEMS);
+  } catch {
+    return [];
+  }
+}
+
 function Home() {
   const [rows, setRows] = useState('5');
   const [columns, setColumns] = useState('6');
@@ -53,8 +91,12 @@ function Home() {
   const [frontPriority, setFrontPriority] = useState(true);
   const [priorityText, setPriorityText] = useState('');
   const [countdown, setCountdown] = useState<number | null>(null);
-  const [assignment, setAssignment] = useState<number[] | null>(null);
+  const [assignment, setAssignment] = useState<Assignment | null>(null);
   const [drawError, setDrawError] = useState('');
+  const [excludedSeatNumbers, setExcludedSeatNumbers] = useState<Set<number>>(() => new Set());
+  const [history, setHistory] = useState<DrawRecord[]>(readDrawHistory);
+  const [draggedSeatIndex, setDraggedSeatIndex] = useState<number | null>(null);
+  const [activeRecordId, setActiveRecordId] = useState<string | null>(null);
   const timeoutIds = useRef<number[]>([]);
 
   const rowCount = Number(rows);
@@ -68,8 +110,13 @@ function Home() {
   const priority = useMemo(() => parseNumberList(priorityText, poolCount), [priorityText, poolCount]);
   const excludedSet = useMemo(() => new Set(excluded.numbers), [excluded.numbers]);
   const eligibleCount = validPool ? Math.max(0, poolCount - excludedSet.size) : 0;
-  const actualSeatCount = validDimensions && validPool ? Math.min(seatCount, eligibleCount) : seatCount;
-  const omittedSeatCount = validDimensions && validPool ? Math.max(0, seatCount - eligibleCount) : 0;
+  const availableSeatIndices = useMemo(
+    () => Array.from({ length: seatCount }, (_, index) => index).filter((index) => !excludedSeatNumbers.has(index + 1)),
+    [seatCount, excludedSeatNumbers],
+  );
+  const availableSeatCount = availableSeatIndices.length;
+  const actualSeatCount = validDimensions && validPool ? Math.min(availableSeatCount, eligibleCount) : availableSeatCount;
+  const omittedSeatCount = validDimensions && validPool ? Math.max(0, availableSeatCount - eligibleCount) : 0;
   const unavailablePriorityNumbers = priority.numbers.filter((number) => excludedSet.has(number));
   const prioritySeatOverflow = priority.numbers.length > actualSeatCount;
   const prioritySet = useMemo(() => new Set(priority.numbers), [priority.numbers]);
@@ -79,6 +126,10 @@ function Home() {
     && !prioritySeatOverflow
     ? priority.numbers.length
     : 0;
+  const previewPrioritySeatSet = useMemo(
+    () => new Set(availableSeatIndices.slice(0, previewPriorityCount).map((index) => index + 1)),
+    [availableSeatIndices, previewPriorityCount],
+  );
 
   useEffect(() => () => {
     timeoutIds.current.forEach(window.clearTimeout);
@@ -87,6 +138,67 @@ function Home() {
   const cancelCountdown = () => {
     timeoutIds.current.forEach(window.clearTimeout);
     timeoutIds.current = [];
+  };
+
+  const saveRecord = (nextAssignment: Assignment, recordId?: string) => {
+    const record: DrawRecord = {
+      id: recordId ?? `${Date.now()}`,
+      createdAt: new Date().toISOString(),
+      rows: rowCount,
+      columns: columnCount,
+      participantCount: poolCount,
+      excludedNumbers: excluded.numbers,
+      priorityNumbers: priority.numbers,
+      frontPriority,
+      excludedSeats: [...excludedSeatNumbers].sort((a, b) => a - b),
+      assignment: nextAssignment,
+    };
+    const nextHistory = recordId
+      ? history.map((item) => item.id === recordId ? record : item)
+      : [record, ...history].slice(0, MAX_HISTORY_ITEMS);
+    setHistory(nextHistory);
+    setActiveRecordId(record.id);
+    window.localStorage.setItem(HISTORY_STORAGE_KEY, JSON.stringify(nextHistory));
+  };
+
+  const toggleExcludedSeat = (seatNumber: number) => {
+    if (countdown !== null || assignment !== null) return;
+    setExcludedSeatNumbers((current) => {
+      const next = new Set(current);
+      if (next.has(seatNumber)) next.delete(seatNumber);
+      else next.add(seatNumber);
+      return next;
+    });
+    setDrawError('');
+  };
+
+  const swapSeats = (sourceIndex: number, targetIndex: number) => {
+    if (!assignment || sourceIndex === targetIndex) return;
+    if (assignment[sourceIndex] === null || assignment[targetIndex] === null) return;
+    const nextAssignment = [...assignment];
+    [nextAssignment[sourceIndex], nextAssignment[targetIndex]] = [nextAssignment[targetIndex], nextAssignment[sourceIndex]];
+    setAssignment(nextAssignment);
+    saveRecord(nextAssignment, activeRecordId ?? undefined);
+  };
+
+  const loadRecord = (record: DrawRecord) => {
+    setRows(String(record.rows));
+    setColumns(String(record.columns));
+    setParticipantCount(String(record.participantCount));
+    setExcludedText(record.excludedNumbers.join(', '));
+    setPriorityText(record.priorityNumbers.join(', '));
+    setFrontPriority(record.frontPriority);
+    setExcludedSeatNumbers(new Set(record.excludedSeats));
+    setAssignment(record.assignment);
+    setActiveRecordId(record.id);
+    setDrawError('');
+  };
+
+  const deleteRecord = (recordId: string) => {
+    const nextHistory = history.filter((record) => record.id !== recordId);
+    setHistory(nextHistory);
+    if (activeRecordId === recordId) setActiveRecordId(null);
+    window.localStorage.setItem(HISTORY_STORAGE_KEY, JSON.stringify(nextHistory));
   };
 
   const generate = () => {
@@ -107,7 +219,7 @@ function Home() {
       setAssignment(null);
       return;
     }
-    if (eligibleCount === 0) {
+    if (eligibleCount === 0 || availableSeatCount === 0) {
       setDrawError('배정 가능한 참가자가 없어요. 제외 번호를 확인해 주세요.');
       setAssignment(null);
       return;
@@ -137,13 +249,20 @@ function Home() {
       window.setTimeout(() => {
         const pool = Array.from({ length: poolCount }, (_, index) => index + 1)
           .filter((number) => !excludedSet.has(number));
-        const seatsToFill = Math.min(seatCount, pool.length);
+        const seatsToFill = Math.min(availableSeatCount, pool.length);
         const prioritized = frontPriority ? shuffle(priority.numbers) : [];
         const prioritizedSet = new Set(prioritized);
         const remaining = shuffle(pool.filter((number) => !prioritizedSet.has(number)))
           .slice(0, seatsToFill - prioritized.length);
         const selected = [...prioritized, ...remaining];
-        setAssignment(frontPriority ? selected : shuffle(selected));
+        const ordered = frontPriority ? selected : shuffle(selected);
+        const nextAssignment: Assignment = Array.from({ length: seatCount }, (_, index) => {
+          if (excludedSeatNumbers.has(index + 1)) return null;
+          const seatPosition = availableSeatIndices.indexOf(index);
+          return seatPosition < ordered.length ? ordered[seatPosition] : null;
+        });
+        setAssignment(nextAssignment);
+        saveRecord(nextAssignment);
         setCountdown(null);
         setDrawError('');
         timeoutIds.current = [];
@@ -152,8 +271,9 @@ function Home() {
   };
 
   const isCounting = countdown !== null;
-  const seats = assignment ?? [];
+  const seats = assignment?.filter((number): number is number => number !== null) ?? [];
   const excludedSummary = [...excludedSet].sort((a, b) => a - b);
+  const excludedSeatSummary = [...excludedSeatNumbers].sort((a, b) => a - b);
 
   return (
     <main className="page-shell">
@@ -277,6 +397,30 @@ function Home() {
               </div>
             </div>
 
+            <section className="history-section" aria-labelledby="history-title">
+              <div className="history-heading">
+                <h3 className="history-title" id="history-title"><History size={15} /> 이전 추첨</h3>
+                <span className="history-count">{history.length}/{MAX_HISTORY_ITEMS}</span>
+              </div>
+              {history.length > 0 ? (
+                <div className="history-list">
+                  {history.map((record) => (
+                    <div className="history-item" key={record.id}>
+                      <button className="history-load" type="button" onClick={() => loadRecord(record)}>
+                        <strong>{record.rows} x {record.columns} · {record.assignment.filter((number) => number !== null).length}석</strong>
+                        <span>{new Date(record.createdAt).toLocaleString('ko-KR', { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' })}</span>
+                      </button>
+                      <button className="history-delete" type="button" onClick={() => deleteRecord(record.id)} aria-label="이전 추첨 기록 삭제" title="기록 삭제">
+                        <X size={14} />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="history-empty">추첨을 완료하면 최근 결과가 저장됩니다.</p>
+              )}
+            </section>
+
             <button className="primary-button" type="button" data-testid="button-generate" onClick={generate} disabled={isCounting}>
               {isCounting ? <><span className="button-count">{countdown}</span>초</> : <><Shuffle size={16} />{assignment ? '다시 뽑기' : '추첨하기'}</>}
             </button>
@@ -313,16 +457,22 @@ function Home() {
                       {Array.from({ length: seatCount }, (_, index) => {
                         const rowIndex = Math.floor(index / columnCount);
                         const columnIndex = index % columnCount;
-                        const isOmitted = validPool && index >= eligibleCount;
+                        const seatNumber = index + 1;
+                        const isExcluded = excludedSeatNumbers.has(seatNumber);
+                        const availablePosition = availableSeatIndices.indexOf(index);
+                        const isOmitted = validPool && !isExcluded && availablePosition >= eligibleCount;
                         return (
-                          <div
-                            className={`seat seat-preview${index < previewPriorityCount ? ' priority-seat' : ''}${isOmitted ? ' seat-omitted' : ''}`}
+                          <button
+                            className={`seat seat-preview${previewPrioritySeatSet.has(seatNumber) ? ' priority-seat' : ''}${isExcluded ? ' seat-excluded' : ''}${isOmitted ? ' seat-omitted' : ''}`}
                             key={`preview-${index}`}
-                            data-testid={`preview-seat-${index + 1}`}
-                            aria-label={`좌석 ${index + 1}번, ${rowIndex + 1}행 ${columnIndex + 1}열${index < previewPriorityCount ? ', 앞자리 우선 배정 예정' : ''}${isOmitted ? ', 인원에 맞춰 제외 예정' : ''}`}
+                            type="button"
+                            data-testid={`preview-seat-${seatNumber}`}
+                            onClick={() => toggleExcludedSeat(seatNumber)}
+                            aria-pressed={isExcluded}
+                            aria-label={`좌석 ${seatNumber}번, ${rowIndex + 1}행 ${columnIndex + 1}열${isExcluded ? ', 제외 좌석' : ', 제외 좌석으로 지정하려면 선택'}`}
                           >
-                            <span className="seat-number">{String(index + 1).padStart(2, '0')}</span>
-                          </div>
+                            {isExcluded ? <X className="excluded-seat-icon" size={22} aria-hidden="true" /> : <span className="seat-empty" aria-hidden="true" />}
+                          </button>
                         );
                       })}
                     </div>
@@ -351,21 +501,40 @@ function Home() {
                 <div className="blackboard" role="img" aria-label="칠판 위치: 좌석 앞쪽">
                   <span>칠판</span>
                 </div>
+                <p className="drag-helper">좌석을 드래그해 다른 참가자와 자리를 바꿀 수 있습니다.</p>
                 <div className="grid-scroll">
                   <div className="seat-grid" style={{ gridTemplateColumns: `repeat(${columnCount}, minmax(57px, 1fr))` }}>
-                    {seats.map((number, index) => {
+                    {assignment.map((number, index) => {
                       const rowIndex = Math.floor(index / columnCount);
                       const columnIndex = index % columnCount;
+                      const seatNumber = index + 1;
+                      const isExcluded = excludedSeatNumbers.has(seatNumber);
+                      const isDragged = draggedSeatIndex === index;
                       return (
                         <div
-                          className={`seat${frontPriority && prioritySet.has(number) ? ' priority-seat' : ''}`}
-                          key={`${number}-${index}`}
-                          data-testid={`seat-${number}`}
+                          className={`seat${number === null ? (isExcluded ? ' seat-excluded' : ' seat-omitted') : ''}${number !== null && frontPriority && prioritySet.has(number) ? ' priority-seat' : ''}${isDragged ? ' seat-dragged' : ''}`}
+                          key={`${number ?? 'empty'}-${index}`}
+                          data-testid={number === null ? `seat-empty-${seatNumber}` : `seat-${number}`}
                           style={{ animationDelay: `${Math.min(index * 28, 480)}ms` }}
-                          aria-label={`${rowIndex + 1}행 ${columnIndex + 1}열, 참가자 ${number}번${frontPriority && prioritySet.has(number) ? ', 앞자리 우선 지정 번호' : ''}`}
+                          draggable={number !== null}
+                          onDragStart={() => setDraggedSeatIndex(index)}
+                          onDragEnd={() => setDraggedSeatIndex(null)}
+                          onDragOver={(event) => event.preventDefault()}
+                          onDrop={() => {
+                            if (draggedSeatIndex !== null) swapSeats(draggedSeatIndex, index);
+                            setDraggedSeatIndex(null);
+                          }}
+                          role="listitem"
+                          aria-label={number === null
+                            ? `${rowIndex + 1}행 ${columnIndex + 1}열, ${isExcluded ? '제외 좌석' : '미배정 좌석'}`
+                            : `${rowIndex + 1}행 ${columnIndex + 1}열, 참가자 ${number}번${frontPriority && prioritySet.has(number) ? ', 앞자리 우선 지정 번호' : ''}`}
                         >
-                          <span className="seat-number">{number}</span>
-                          <span className="seat-label">{rowIndex + 1}행 · {columnIndex + 1}열</span>
+                          {number === null
+                            ? (isExcluded ? <X className="excluded-seat-icon" size={22} aria-hidden="true" /> : <span className="seat-empty" aria-hidden="true" />)
+                            : <>
+                                <span className="seat-number">{number}</span>
+                                <span className="seat-label">{rowIndex + 1}행 · {columnIndex + 1}열</span>
+                              </>}
                         </div>
                       );
                     })}
@@ -378,6 +547,12 @@ function Home() {
                   <div className="result-note" data-testid="text-excluded-note">
                     <Info size={14} />
                     <span>제외 번호: {excludedSummary.join(', ')}</span>
+                  </div>
+                )}
+                {excludedSeatSummary.length > 0 && (
+                  <div className="result-note" data-testid="text-excluded-seat-note">
+                    <Info size={14} />
+                    <span>제외 좌석: {excludedSeatSummary.join(', ')}</span>
                   </div>
                 )}
               </div>
