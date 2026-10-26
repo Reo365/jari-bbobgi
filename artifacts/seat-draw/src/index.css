@@ -262,7 +262,7 @@
 .drag-helper { margin:-8px 0 12px; color:#77847a; font-size:12px; text-align:right; }
 .grid-scroll { overflow-x:auto; padding:2px 2px 8px; scrollbar-color:#c8d1c5 transparent; scrollbar-width:thin; }
 .seat-grid { display:grid; gap:10px; min-width:min-content; }
-.seat { display:flex; min-width:66px; min-height:69px; padding:0; flex-direction:column; align-items:center; justify-content:center; gap:7px; border:1px solid #d9dfd2; border-radius:11px; background:#fff; color:inherit; box-shadow:0 2px 0 rgba(47,68,58,.045); animation:seat-in .42s cubic-bezier(.17,.67,.26,1.2) both; }
+.seat { display:flex; min-width:66px; min-height:69px; padding:0; flex-direction:column; align-items:center; justify-content:center; gap:7px; border:1px solid #d9dfd2; border-radius:11px; background:#fff; color:inherit; user-select:none; -webkit-user-select:none; box-shadow:0 2px 0 rgba(47,68,58,.045); animation:seat-in .42s cubic-bezier(.17,.67,.26,1.2) both; }
 .seat-preview { cursor:pointer; transition:border-color .18s, background .18s, transform .18s, box-shadow .18s; }
 .seat-preview:hover { border-color:#7ba18f; background:#f6faf3; transform:translateY(-2px); box-shadow:0 4px 0 rgba(47,68,58,.06); }
 .seat-preview:focus-visible { outline:3px solid #e0b44e; outline-offset:3px; }
@@ -277,9 +277,10 @@
 .seat-excluded:hover { border-color:#b95c4d; background:#f8e4de; }
 .seat-omitted { border-style:dashed; border-color:#d8d7cd; background:#f0efe8; box-shadow:none; opacity:.62; }
 .seat-omitted .seat-number, .seat-omitted .seat-label { color:#a5a69d; }
-.seat[draggable='true'] { cursor:grab; touch-action:none; }
-.seat[draggable='true']:active { cursor:grabbing; }
+.seat[data-seat-index] { cursor:grab; touch-action:none; }
+.seat[data-seat-index]:active { cursor:grabbing; }
 .seat-dragged { opacity:.45; border-color:#6d9986; box-shadow:0 0 0 3px rgba(76,132,108,.14); }
+.seat-drag-target { border-color:#4d8c72; box-shadow:0 0 0 3px rgba(76,132,108,.18); transform:translateY(-2px); }
 .priority-legend { display:flex; align-items:center; gap:8px; margin:7px 2px 0; color:#8b6b54; font-size:13px; line-height:1.5; }
 .priority-legend-swatch { flex:none; width:12px; height:12px; border:1px solid #c87950; border-radius:3px; background:#f5d6bd; }
 .result-note { display:flex; align-items:flex-start; gap:9px; margin-top:18px; padding:12px 13px; border-radius:9px; background:#f5f3e9; color:#77847a; font-size:13px; line-height:1.5; }

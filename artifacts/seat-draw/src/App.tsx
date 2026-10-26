@@ -1,4 +1,4 @@
-import { type ReactNode, useEffect, useMemo, useRef, useState } from 'react';
+import { type PointerEvent as ReactPointerEvent, type ReactNode, useEffect, useMemo, useRef, useState } from 'react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { ErrorBoundary } from '@/components/error-boundary';
 import { Toaster } from '@/components/ui/toaster';
@@ -96,7 +96,10 @@ function Home() {
   const [excludedSeatNumbers, setExcludedSeatNumbers] = useState<Set<number>>(() => new Set());
   const [history, setHistory] = useState<DrawRecord[]>(readDrawHistory);
   const [draggedSeatIndex, setDraggedSeatIndex] = useState<number | null>(null);
+  const [dragOverSeatIndex, setDragOverSeatIndex] = useState<number | null>(null);
   const [activeRecordId, setActiveRecordId] = useState<string | null>(null);
+  const draggedSeatRef = useRef<number | null>(null);
+  const dragOverSeatRef = useRef<number | null>(null);
   const timeoutIds = useRef<number[]>([]);
 
   const rowCount = Number(rows);
@@ -179,6 +182,40 @@ function Home() {
     [nextAssignment[sourceIndex], nextAssignment[targetIndex]] = [nextAssignment[targetIndex], nextAssignment[sourceIndex]];
     setAssignment(nextAssignment);
     saveRecord(nextAssignment, activeRecordId ?? undefined);
+  };
+
+  const startSeatPointerDrag = (event: ReactPointerEvent<HTMLDivElement>, index: number) => {
+    if (!assignment || assignment[index] === null) return;
+    event.preventDefault();
+    draggedSeatRef.current = index;
+    dragOverSeatRef.current = index;
+    setDraggedSeatIndex(index);
+    setDragOverSeatIndex(index);
+    event.currentTarget.setPointerCapture(event.pointerId);
+  };
+
+  const moveSeatPointerDrag = (event: ReactPointerEvent<HTMLDivElement>) => {
+    if (draggedSeatRef.current === null) return;
+    event.preventDefault();
+    const element = document.elementFromPoint(event.clientX, event.clientY);
+    const seatElement = element instanceof HTMLElement
+      ? element.closest<HTMLElement>('[data-seat-index]')
+      : null;
+    const nextIndex = seatElement ? Number(seatElement.dataset.seatIndex) : null;
+    if (nextIndex !== null && Number.isInteger(nextIndex)) {
+      dragOverSeatRef.current = nextIndex;
+      setDragOverSeatIndex(nextIndex);
+    }
+  };
+
+  const finishSeatPointerDrag = () => {
+    const sourceIndex = draggedSeatRef.current;
+    const targetIndex = dragOverSeatRef.current;
+    if (sourceIndex !== null && targetIndex !== null) swapSeats(sourceIndex, targetIndex);
+    draggedSeatRef.current = null;
+    dragOverSeatRef.current = null;
+    setDraggedSeatIndex(null);
+    setDragOverSeatIndex(null);
   };
 
   const loadRecord = (record: DrawRecord) => {
@@ -510,20 +547,18 @@ function Home() {
                       const seatNumber = index + 1;
                       const isExcluded = excludedSeatNumbers.has(seatNumber);
                       const isDragged = draggedSeatIndex === index;
+                      const isDragTarget = dragOverSeatIndex === index && !isDragged;
                       return (
                         <div
-                          className={`seat${number === null ? (isExcluded ? ' seat-excluded' : ' seat-omitted') : ''}${number !== null && frontPriority && prioritySet.has(number) ? ' priority-seat' : ''}${isDragged ? ' seat-dragged' : ''}`}
+                          className={`seat${number === null ? (isExcluded ? ' seat-excluded' : ' seat-omitted') : ''}${number !== null && frontPriority && prioritySet.has(number) ? ' priority-seat' : ''}${isDragged ? ' seat-dragged' : ''}${isDragTarget ? ' seat-drag-target' : ''}`}
                           key={`${number ?? 'empty'}-${index}`}
                           data-testid={number === null ? `seat-empty-${seatNumber}` : `seat-${number}`}
+                          data-seat-index={index}
                           style={{ animationDelay: `${Math.min(index * 28, 480)}ms` }}
-                          draggable={number !== null}
-                          onDragStart={() => setDraggedSeatIndex(index)}
-                          onDragEnd={() => setDraggedSeatIndex(null)}
-                          onDragOver={(event) => event.preventDefault()}
-                          onDrop={() => {
-                            if (draggedSeatIndex !== null) swapSeats(draggedSeatIndex, index);
-                            setDraggedSeatIndex(null);
-                          }}
+                          onPointerDown={(event) => startSeatPointerDrag(event, index)}
+                          onPointerMove={moveSeatPointerDrag}
+                          onPointerUp={finishSeatPointerDrag}
+                          onPointerCancel={finishSeatPointerDrag}
                           role="listitem"
                           aria-label={number === null
                             ? `${rowIndex + 1}행 ${columnIndex + 1}열, ${isExcluded ? '제외 좌석' : '미배정 좌석'}`
