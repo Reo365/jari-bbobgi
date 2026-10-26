@@ -88,6 +88,24 @@ function readDrawHistory(): DrawRecord[] {
   }
 }
 
+function drawRoundedRect(
+  context: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  width: number,
+  height: number,
+  radius: number,
+) {
+  const adjustedRadius = Math.min(radius, width / 2, height / 2);
+  context.beginPath();
+  context.moveTo(x + adjustedRadius, y);
+  context.arcTo(x + width, y, x + width, y + height, adjustedRadius);
+  context.arcTo(x + width, y + height, x, y + height, adjustedRadius);
+  context.arcTo(x, y + height, x, y, adjustedRadius);
+  context.arcTo(x, y, x + width, y, adjustedRadius);
+  context.closePath();
+}
+
 function Home() {
   const [rows, setRows] = useState('5');
   const [columns, setColumns] = useState('6');
@@ -319,11 +337,89 @@ function Home() {
     }
   };
 
-  const saveCurrentResult = () => {
+  const saveResultImage = () => {
     if (!assignment) return;
-    saveRecord(assignment, activeRecordId ?? undefined);
-    setSaveFeedback(true);
-    feedbackTimeoutIds.current.push(window.setTimeout(() => setSaveFeedback(false), 1800));
+    const canvas = document.createElement('canvas');
+    canvas.width = 1600;
+    canvas.height = 900;
+    const context = canvas.getContext('2d');
+    if (!context) {
+      setDrawError('이미지를 만들지 못했어요. 브라우저를 확인해 주세요.');
+      return;
+    }
+
+    const padding = 72;
+    context.fillStyle = '#f8f5eb';
+    context.fillRect(0, 0, canvas.width, canvas.height);
+    context.fillStyle = '#25473d';
+    context.font = '700 42px "Gowun Dodum", sans-serif';
+    context.fillText('자리 배치 결과', padding, 82);
+    context.fillStyle = '#718078';
+    context.font = '500 18px "DM Sans", sans-serif';
+    context.fillText(`${rowCount}행 x ${columnCount}열 · ${seats.length}석 배정`, padding, 116);
+    context.textAlign = 'right';
+    context.fillText(new Date().toLocaleString('ko-KR'), canvas.width - padding, 82);
+    context.textAlign = 'left';
+
+    const boardWidth = Math.min(560, canvas.width - padding * 2);
+    const boardX = (canvas.width - boardWidth) / 2;
+    drawRoundedRect(context, boardX, 155, boardWidth, 46, 8);
+    context.fillStyle = '#23584c';
+    context.fill();
+    context.fillStyle = '#f6f2df';
+    context.font = '700 20px "Gowun Dodum", sans-serif';
+    context.textAlign = 'center';
+    context.fillText('칠판', canvas.width / 2, 185);
+    context.textAlign = 'left';
+
+    const gridTop = 245;
+    const gridLeft = padding;
+    const gridWidth = canvas.width - padding * 2;
+    const gridGap = 12;
+    const seatWidth = (gridWidth - gridGap * Math.max(columnCount - 1, 0)) / columnCount;
+    const seatHeight = Math.min(92, (canvas.height - gridTop - 92 - gridGap * Math.max(rowCount - 1, 0)) / rowCount);
+    assignment.forEach((number, index) => {
+      const rowIndex = Math.floor(index / columnCount);
+      const columnIndex = index % columnCount;
+      const seatNumber = index + 1;
+      const x = gridLeft + columnIndex * (seatWidth + gridGap);
+      const y = gridTop + rowIndex * (seatHeight + gridGap);
+      const isExcluded = excludedSeatNumbers.has(seatNumber);
+      const isPriority = number !== null && frontPriority && prioritySet.has(number);
+      drawRoundedRect(context, x, y, seatWidth, seatHeight, 12);
+      context.fillStyle = isExcluded ? '#fbefeb' : isPriority ? '#f5d6bd' : number === null ? '#f0efe8' : '#ffffff';
+      context.fill();
+      context.strokeStyle = isExcluded ? '#d28a7b' : isPriority ? '#c87950' : '#d9dfd2';
+      context.lineWidth = 2;
+      context.stroke();
+      context.textAlign = 'center';
+      context.font = '500 28px "DM Mono", monospace';
+      context.fillStyle = isExcluded ? '#b95c4d' : isPriority ? '#89472e' : number === null ? '#a5a69d' : '#28584b';
+      context.fillText(isExcluded ? 'X' : number === null ? '-' : String(number), x + seatWidth / 2, y + seatHeight / 2 + 10);
+    });
+    context.textAlign = 'left';
+    context.fillStyle = '#77847a';
+    context.font = '500 16px "DM Sans", sans-serif';
+    const footer = [
+      excludedSummary.length > 0 ? `제외 참가자 ${excludedSummary.length}명` : '',
+      excludedSeatSummary.length > 0 ? `제외 좌석 ${excludedSeatSummary.length}개` : '',
+    ].filter(Boolean).join(' · ');
+    if (footer) context.fillText(footer, padding, canvas.height - 38);
+
+    canvas.toBlob((blob) => {
+      if (!blob) {
+        setDrawError('이미지를 저장하지 못했어요. 브라우저를 확인해 주세요.');
+        return;
+      }
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `자리-배치-${new Date().toISOString().slice(0, 10)}.png`;
+      link.click();
+      URL.revokeObjectURL(url);
+      setSaveFeedback(true);
+      feedbackTimeoutIds.current.push(window.setTimeout(() => setSaveFeedback(false), 1800));
+    }, 'image/png');
   };
 
   const generate = () => {
@@ -572,8 +668,8 @@ function Home() {
                 <div className="result-count" data-testid="text-seat-count"><LayoutGrid size={13} /><b>{assignment ? seats.length : actualSeatCount}</b>석</div>
                 {assignment && (
                   <div className="result-actions" aria-label="추첨 결과 작업">
-                    <button className="result-action" type="button" onClick={saveCurrentResult} title="결과 저장">
-                      <Save size={14} /> <span>{saveFeedback ? '저장됨' : '저장'}</span>
+                    <button className="result-action" type="button" onClick={saveResultImage} title="결과 이미지 저장">
+                      <Save size={14} /> <span>{saveFeedback ? '저장됨' : '이미지 저장'}</span>
                     </button>
                     <button className="result-action" type="button" onClick={copyResult} title="결과 복사">
                       <Copy size={14} /> <span>{copyFeedback ? '복사됨' : '복사'}</span>
