@@ -366,15 +366,15 @@ function Home() {
     context.fillText(new Date().toLocaleString('ko-KR'), logicalWidth - padding, 82);
     context.textAlign = 'left';
 
-    const boardWidth = Math.min(560, canvas.width - padding * 2);
-    const boardX = (canvas.width - boardWidth) / 2;
+    const boardWidth = Math.min(560, logicalWidth - padding * 2);
+    const boardX = (logicalWidth - boardWidth) / 2;
     drawRoundedRect(context, boardX, 155, boardWidth, 46, 8);
     context.fillStyle = '#23584c';
     context.fill();
     context.fillStyle = '#f6f2df';
     context.font = '700 20px "Gowun Dodum", sans-serif';
     context.textAlign = 'center';
-    context.fillText('칠판', canvas.width / 2, 185);
+    context.fillText('칠판', logicalWidth / 2, 185);
     context.textAlign = 'left';
 
     const gridTop = 245;
