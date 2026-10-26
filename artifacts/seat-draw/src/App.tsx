@@ -337,20 +337,25 @@ function Home() {
     }
   };
 
-  const saveResultImage = () => {
+  const saveResultImage = async () => {
     if (!assignment) return;
+    await document.fonts.ready;
     const canvas = document.createElement('canvas');
-    canvas.width = 1600;
-    canvas.height = 900;
+    const exportScale = 2;
+    const logicalWidth = 1600;
+    const logicalHeight = 900;
+    canvas.width = logicalWidth * exportScale;
+    canvas.height = logicalHeight * exportScale;
     const context = canvas.getContext('2d');
     if (!context) {
       setDrawError('이미지를 만들지 못했어요. 브라우저를 확인해 주세요.');
       return;
     }
+    context.scale(exportScale, exportScale);
 
     const padding = 72;
     context.fillStyle = '#f8f5eb';
-    context.fillRect(0, 0, canvas.width, canvas.height);
+    context.fillRect(0, 0, logicalWidth, logicalHeight);
     context.fillStyle = '#25473d';
     context.font = '700 42px "Gowun Dodum", sans-serif';
     context.fillText('자리 배치 결과', padding, 82);
@@ -358,7 +363,7 @@ function Home() {
     context.font = '500 18px "DM Sans", sans-serif';
     context.fillText(`${rowCount}행 x ${columnCount}열 · ${seats.length}석 배정`, padding, 116);
     context.textAlign = 'right';
-    context.fillText(new Date().toLocaleString('ko-KR'), canvas.width - padding, 82);
+    context.fillText(new Date().toLocaleString('ko-KR'), logicalWidth - padding, 82);
     context.textAlign = 'left';
 
     const boardWidth = Math.min(560, canvas.width - padding * 2);
@@ -374,10 +379,10 @@ function Home() {
 
     const gridTop = 245;
     const gridLeft = padding;
-    const gridWidth = canvas.width - padding * 2;
+    const gridWidth = logicalWidth - padding * 2;
     const gridGap = 12;
     const seatWidth = (gridWidth - gridGap * Math.max(columnCount - 1, 0)) / columnCount;
-    const seatHeight = Math.min(92, (canvas.height - gridTop - 92 - gridGap * Math.max(rowCount - 1, 0)) / rowCount);
+    const seatHeight = Math.min(92, (logicalHeight - gridTop - 92 - gridGap * Math.max(rowCount - 1, 0)) / rowCount);
     assignment.forEach((number, index) => {
       const rowIndex = Math.floor(index / columnCount);
       const columnIndex = index % columnCount;
@@ -404,7 +409,7 @@ function Home() {
       excludedSummary.length > 0 ? `제외 참가자 ${excludedSummary.length}명` : '',
       excludedSeatSummary.length > 0 ? `제외 좌석 ${excludedSeatSummary.length}개` : '',
     ].filter(Boolean).join(' · ');
-    if (footer) context.fillText(footer, padding, canvas.height - 38);
+    if (footer) context.fillText(footer, padding, logicalHeight - 38);
 
     canvas.toBlob((blob) => {
       if (!blob) {
