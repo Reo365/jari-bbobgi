@@ -25,7 +25,7 @@ import {
 const queryClient = new QueryClient();
 const HISTORY_STORAGE_KEY = 'jari-bbobgi-draw-history';
 const MAX_HISTORY_ITEMS = 10;
-const DRAG_HOLD_DELAY = 500;
+const DRAG_HOLD_DELAY = 300;
 
 type Assignment = Array<number | null>;
 
@@ -106,6 +106,8 @@ function Home() {
   const dragOverSeatRef = useRef<number | null>(null);
   const pendingSeatRef = useRef<number | null>(null);
   const dragPressTimerRef = useRef<number | null>(null);
+  const pressTargetRef = useRef<HTMLDivElement | null>(null);
+  const pressPointerIdRef = useRef<number | null>(null);
   const timeoutIds = useRef<number[]>([]);
 
   const rowCount = Number(rows);
@@ -192,13 +194,14 @@ function Home() {
 
   const startSeatPointerDrag = (event: ReactPointerEvent<HTMLDivElement>, index: number) => {
     if (!assignment || assignment[index] === null) return;
-    event.preventDefault();
-    event.currentTarget.setPointerCapture(event.pointerId);
     pendingSeatRef.current = index;
+    pressTargetRef.current = event.currentTarget;
+    pressPointerIdRef.current = event.pointerId;
     setDragOrigin({ x: event.clientX, y: event.clientY });
     setDragPosition({ x: event.clientX, y: event.clientY });
     dragPressTimerRef.current = window.setTimeout(() => {
       if (pendingSeatRef.current !== index) return;
+      pressTargetRef.current?.setPointerCapture(pressPointerIdRef.current ?? event.pointerId);
       draggedSeatRef.current = index;
       dragOverSeatRef.current = index;
       setDraggedSeatIndex(index);
@@ -208,9 +211,9 @@ function Home() {
 
   const moveSeatPointerDrag = (event: ReactPointerEvent<HTMLDivElement>) => {
     if (pendingSeatRef.current === null && draggedSeatRef.current === null) return;
+    if (draggedSeatRef.current === null) return;
     event.preventDefault();
     setDragPosition({ x: event.clientX, y: event.clientY });
-    if (draggedSeatRef.current === null) return;
     const sourceIndex = draggedSeatRef.current;
     const seatElement = document.elementsFromPoint(event.clientX, event.clientY)
       .map((element) => element instanceof HTMLElement
@@ -233,6 +236,8 @@ function Home() {
     const targetIndex = dragOverSeatRef.current;
     if (sourceIndex !== null && targetIndex !== null) swapSeats(sourceIndex, targetIndex);
     pendingSeatRef.current = null;
+    pressTargetRef.current = null;
+    pressPointerIdRef.current = null;
     draggedSeatRef.current = null;
     dragOverSeatRef.current = null;
     setDraggedSeatIndex(null);
