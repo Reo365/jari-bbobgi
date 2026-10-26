@@ -1,4 +1,4 @@
-import { type PointerEvent as ReactPointerEvent, type ReactNode, useEffect, useMemo, useRef, useState } from 'react';
+import { lazy, Suspense, type PointerEvent as ReactPointerEvent, type ReactNode, useEffect, useMemo, useRef, useState } from 'react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { ErrorBoundary } from '@/components/error-boundary';
 import { Toaster } from '@/components/ui/toaster';
@@ -6,6 +6,7 @@ import { TooltipProvider } from '@/components/ui/tooltip';
 import NotFound from '@/pages/not-found';
 import {
   AlertCircle,
+  Box,
   Check,
   Copy,
   History,
@@ -24,6 +25,8 @@ import {
   useLocation,
   Router as WouterRouter,
 } from 'wouter';
+
+const SeatGrid3D = lazy(() => import('@/components/SeatGrid3D').then((module) => ({ default: module.SeatGrid3D })));
 
 const queryClient = new QueryClient();
 const HISTORY_STORAGE_KEY = 'jari-bbobgi-draw-history';
@@ -44,6 +47,8 @@ type DrawRecord = {
   excludedSeats: number[];
   assignment: Assignment;
 };
+
+type ViewMode = 'normal' | '3d';
 
 function shuffle<T>(items: T[]): T[] {
   const result = [...items];
@@ -125,6 +130,9 @@ function Home() {
   const [activeRecordId, setActiveRecordId] = useState<string | null>(null);
   const [copyFeedback, setCopyFeedback] = useState(false);
   const [saveFeedback, setSaveFeedback] = useState(false);
+  const [viewMode, setViewMode] = useState<ViewMode>(() => (
+    window.localStorage.getItem('jari-bbobgi-view-mode') === '3d' ? '3d' : 'normal'
+  ));
   const draggedSeatRef = useRef<number | null>(null);
   const dragOverSeatRef = useRef<number | null>(null);
   const pendingSeatRef = useRef<number | null>(null);
@@ -306,6 +314,11 @@ function Home() {
     setHistory([]);
     setActiveRecordId(null);
     window.localStorage.removeItem(HISTORY_STORAGE_KEY);
+  };
+
+  const changeViewMode = (nextMode: ViewMode) => {
+    setViewMode(nextMode);
+    window.localStorage.setItem('jari-bbobgi-view-mode', nextMode);
   };
 
   const formatResult = () => {
@@ -666,10 +679,18 @@ function Home() {
           <section className="panel result-panel" aria-labelledby="result-title">
             <div className="result-heading">
               <div>
-                <h2 className="result-title" id="result-title">{assignment ? '추첨 결과' : '자리 미리보기'}</h2>
+                <h2 className="result-title" id="result-title">{viewMode === '3d' ? '3D 자리 배치' : assignment ? '추첨 결과' : '자리 미리보기'}</h2>
                 {assignment && <p className="result-subtitle">배정 결과는 자동 저장됩니다.</p>}
               </div>
               <div className="result-heading-actions">
+                <div className="view-toggle" role="radiogroup" aria-label="좌석 표시 모드">
+                  <button className={viewMode === 'normal' ? 'view-toggle-button active' : 'view-toggle-button'} type="button" role="radio" aria-checked={viewMode === 'normal'} onClick={() => changeViewMode('normal')}>
+                    <LayoutGrid size={14} /> 일반
+                  </button>
+                  <button className={viewMode === '3d' ? 'view-toggle-button active' : 'view-toggle-button'} type="button" role="radio" aria-checked={viewMode === '3d'} onClick={() => changeViewMode('3d')}>
+                    <Box size={14} /> 3D
+                  </button>
+                </div>
                 <div className="result-count" data-testid="text-seat-count"><LayoutGrid size={13} /><b>{assignment ? seats.length : actualSeatCount}</b>석</div>
                 {assignment && (
                   <div className="result-actions" aria-label="추첨 결과 작업">
@@ -699,7 +720,7 @@ function Home() {
               </div>
             ) : null}
 
-            {!assignment && !isCounting && (
+            {viewMode === 'normal' && !assignment && !isCounting && (
               <div className="preview-content" data-testid="seat-preview">
                 <div className="blackboard" role="img" aria-label="칠판 위치: 좌석 앞쪽">
                   <span>칠판</span>
@@ -745,7 +766,32 @@ function Home() {
               </div>
             )}
 
-            {assignment && !isCounting && (
+            {viewMode === '3d' && !isCounting && (
+              validDimensions ? (
+                <div className="scene3d-content" data-testid="result-seating-3d">
+                  <Suspense fallback={<div className="scene3d-loading">3D 교실을 준비하는 중...</div>}>
+                    <SeatGrid3D
+                      rows={rowCount}
+                      columns={columnCount}
+                      assignment={assignment}
+                      excludedSeats={excludedSeatNumbers}
+                      priorityNumbers={prioritySet}
+                      frontPriority={frontPriority}
+                      onSwap={swapSeats}
+                    />
+                  </Suspense>
+                  <div className="scene3d-legend">
+                    <span><i className="legend-dot normal" />일반 좌석</span>
+                    <span><i className="legend-dot priority" />앞자리 우선</span>
+                    <span><i className="legend-dot excluded" />제외 좌석</span>
+                  </div>
+                </div>
+              ) : (
+                <div className="preview-error" role="status">행과 열을 1부터 20 사이로 입력하면 3D 배치가 표시됩니다.</div>
+              )
+            )}
+
+            {viewMode === 'normal' && assignment && !isCounting && (
               <div className="result-content" data-testid="result-seating-grid">
                 <div className="status-card" role="status" aria-live="polite" data-testid="status-draw-complete">
                   <span className="status-indicator" />
