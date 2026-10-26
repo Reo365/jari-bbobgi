@@ -24,6 +24,7 @@ import {
 const queryClient = new QueryClient();
 const HISTORY_STORAGE_KEY = 'jari-bbobgi-draw-history';
 const MAX_HISTORY_ITEMS = 10;
+const DRAG_HOLD_DELAY = 500;
 
 type Assignment = Array<number | null>;
 
@@ -97,9 +98,12 @@ function Home() {
   const [history, setHistory] = useState<DrawRecord[]>(readDrawHistory);
   const [draggedSeatIndex, setDraggedSeatIndex] = useState<number | null>(null);
   const [dragOverSeatIndex, setDragOverSeatIndex] = useState<number | null>(null);
+  const [dragPosition, setDragPosition] = useState<{ x: number; y: number } | null>(null);
   const [activeRecordId, setActiveRecordId] = useState<string | null>(null);
   const draggedSeatRef = useRef<number | null>(null);
   const dragOverSeatRef = useRef<number | null>(null);
+  const pendingSeatRef = useRef<number | null>(null);
+  const dragPressTimerRef = useRef<number | null>(null);
   const timeoutIds = useRef<number[]>([]);
 
   const rowCount = Number(rows);
@@ -187,16 +191,23 @@ function Home() {
   const startSeatPointerDrag = (event: ReactPointerEvent<HTMLDivElement>, index: number) => {
     if (!assignment || assignment[index] === null) return;
     event.preventDefault();
-    draggedSeatRef.current = index;
-    dragOverSeatRef.current = index;
-    setDraggedSeatIndex(index);
-    setDragOverSeatIndex(index);
     event.currentTarget.setPointerCapture(event.pointerId);
+    pendingSeatRef.current = index;
+    setDragPosition({ x: event.clientX, y: event.clientY });
+    dragPressTimerRef.current = window.setTimeout(() => {
+      if (pendingSeatRef.current !== index) return;
+      draggedSeatRef.current = index;
+      dragOverSeatRef.current = index;
+      setDraggedSeatIndex(index);
+      setDragOverSeatIndex(index);
+    }, DRAG_HOLD_DELAY);
   };
 
   const moveSeatPointerDrag = (event: ReactPointerEvent<HTMLDivElement>) => {
-    if (draggedSeatRef.current === null) return;
+    if (pendingSeatRef.current === null && draggedSeatRef.current === null) return;
     event.preventDefault();
+    setDragPosition({ x: event.clientX, y: event.clientY });
+    if (draggedSeatRef.current === null) return;
     const element = document.elementFromPoint(event.clientX, event.clientY);
     const seatElement = element instanceof HTMLElement
       ? element.closest<HTMLElement>('[data-seat-index]')
@@ -209,13 +220,19 @@ function Home() {
   };
 
   const finishSeatPointerDrag = () => {
+    if (dragPressTimerRef.current !== null) {
+      window.clearTimeout(dragPressTimerRef.current);
+      dragPressTimerRef.current = null;
+    }
     const sourceIndex = draggedSeatRef.current;
     const targetIndex = dragOverSeatRef.current;
     if (sourceIndex !== null && targetIndex !== null) swapSeats(sourceIndex, targetIndex);
+    pendingSeatRef.current = null;
     draggedSeatRef.current = null;
     dragOverSeatRef.current = null;
     setDraggedSeatIndex(null);
     setDragOverSeatIndex(null);
+    setDragPosition(null);
   };
 
   const loadRecord = (record: DrawRecord) => {
@@ -538,7 +555,12 @@ function Home() {
                 <div className="blackboard" role="img" aria-label="칠판 위치: 좌석 앞쪽">
                   <span>칠판</span>
                 </div>
-                <p className="drag-helper">좌석을 드래그해 다른 참가자와 자리를 바꿀 수 있습니다.</p>
+                <p className="drag-helper">좌석을 0.5초 이상 누른 뒤 드래그해 다른 참가자와 자리를 바꿀 수 있습니다.</p>
+                {draggedSeatIndex !== null && dragPosition !== null && assignment[draggedSeatIndex] !== null && (
+                  <div className="drag-ghost" style={{ left: dragPosition.x, top: dragPosition.y }} aria-hidden="true">
+                    {assignment[draggedSeatIndex]}
+                  </div>
+                )}
                 <div className="grid-scroll">
                   <div className="seat-grid" style={{ gridTemplateColumns: `repeat(${columnCount}, minmax(57px, 1fr))` }}>
                     {assignment.map((number, index) => {

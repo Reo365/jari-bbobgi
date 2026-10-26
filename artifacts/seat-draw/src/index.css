@@ -260,6 +260,7 @@
 .countdown-track { height:3px; margin-top:12px; border-radius:3px; background:#d9e3d7; overflow:hidden; }
 .countdown-track span { display:block; height:100%; border-radius:3px; background:#c97c54; transform-origin:left; animation:count-track 3s linear both; }
 .drag-helper { margin:-8px 0 12px; color:#77847a; font-size:12px; text-align:right; }
+.drag-ghost { position:fixed; z-index:20; display:grid; width:66px; height:69px; place-items:center; border:2px solid #4d8c72; border-radius:11px; background:rgba(255,255,255,.94); color:#28584b; box-shadow:0 10px 24px rgba(35,88,76,.2); font-family:'DM Mono',monospace; font-size:23px; font-weight:500; pointer-events:none; transform:translate(-50%, -50%) scale(1.04); }
 .grid-scroll { overflow-x:auto; padding:2px 2px 8px; scrollbar-color:#c8d1c5 transparent; scrollbar-width:thin; }
 .seat-grid { display:grid; gap:10px; min-width:min-content; }
 .seat { display:flex; min-width:66px; min-height:69px; padding:0; flex-direction:column; align-items:center; justify-content:center; gap:7px; border:1px solid #d9dfd2; border-radius:11px; background:#fff; color:inherit; user-select:none; -webkit-user-select:none; box-shadow:0 2px 0 rgba(47,68,58,.045); animation:seat-in .42s cubic-bezier(.17,.67,.26,1.2) both; }
