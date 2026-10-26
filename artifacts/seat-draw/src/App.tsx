@@ -146,6 +146,17 @@ function Home() {
     timeoutIds.current.forEach(window.clearTimeout);
   }, []);
 
+  useEffect(() => {
+    if (draggedSeatIndex === null) return undefined;
+    const preventDragScroll = (event: TouchEvent) => event.preventDefault();
+    document.addEventListener('touchmove', preventDragScroll, { passive: false });
+    document.body.classList.add('is-seat-dragging');
+    return () => {
+      document.removeEventListener('touchmove', preventDragScroll);
+      document.body.classList.remove('is-seat-dragging');
+    };
+  }, [draggedSeatIndex]);
+
   const cancelCountdown = () => {
     timeoutIds.current.forEach(window.clearTimeout);
     timeoutIds.current = [];

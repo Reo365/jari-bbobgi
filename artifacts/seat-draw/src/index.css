@@ -159,6 +159,7 @@
   }
   button, input { font: inherit; }
   button { cursor: pointer; }
+  body.is-seat-dragging { overflow: hidden; overscroll-behavior: none; }
   ::selection { background: hsl(45 75% 75%); color: hsl(168 24% 16%); }
 }
 
