@@ -99,6 +99,7 @@ function Home() {
   const [draggedSeatIndex, setDraggedSeatIndex] = useState<number | null>(null);
   const [dragOverSeatIndex, setDragOverSeatIndex] = useState<number | null>(null);
   const [dragPosition, setDragPosition] = useState<{ x: number; y: number } | null>(null);
+  const [dragOrigin, setDragOrigin] = useState<{ x: number; y: number } | null>(null);
   const [activeRecordId, setActiveRecordId] = useState<string | null>(null);
   const draggedSeatRef = useRef<number | null>(null);
   const dragOverSeatRef = useRef<number | null>(null);
@@ -193,6 +194,7 @@ function Home() {
     event.preventDefault();
     event.currentTarget.setPointerCapture(event.pointerId);
     pendingSeatRef.current = index;
+    setDragOrigin({ x: event.clientX, y: event.clientY });
     setDragPosition({ x: event.clientX, y: event.clientY });
     dragPressTimerRef.current = window.setTimeout(() => {
       if (pendingSeatRef.current !== index) return;
@@ -233,6 +235,7 @@ function Home() {
     setDraggedSeatIndex(null);
     setDragOverSeatIndex(null);
     setDragPosition(null);
+    setDragOrigin(null);
   };
 
   const loadRecord = (record: DrawRecord) => {
@@ -555,12 +558,6 @@ function Home() {
                 <div className="blackboard" role="img" aria-label="칠판 위치: 좌석 앞쪽">
                   <span>칠판</span>
                 </div>
-                <p className="drag-helper">좌석을 0.5초 이상 누른 뒤 드래그해 다른 참가자와 자리를 바꿀 수 있습니다.</p>
-                {draggedSeatIndex !== null && dragPosition !== null && assignment[draggedSeatIndex] !== null && (
-                  <div className="drag-ghost" style={{ left: dragPosition.x, top: dragPosition.y }} aria-hidden="true">
-                    {assignment[draggedSeatIndex]}
-                  </div>
-                )}
                 <div className="grid-scroll">
                   <div className="seat-grid" style={{ gridTemplateColumns: `repeat(${columnCount}, minmax(57px, 1fr))` }}>
                     {assignment.map((number, index) => {
@@ -570,13 +567,16 @@ function Home() {
                       const isExcluded = excludedSeatNumbers.has(seatNumber);
                       const isDragged = draggedSeatIndex === index;
                       const isDragTarget = dragOverSeatIndex === index && !isDragged;
+                      const dragOffset = isDragged && dragPosition && dragOrigin
+                        ? `translate(${dragPosition.x - dragOrigin.x}px, ${dragPosition.y - dragOrigin.y}px) scale(1.04)`
+                        : undefined;
                       return (
                         <div
                           className={`seat${number === null ? (isExcluded ? ' seat-excluded' : ' seat-omitted') : ''}${number !== null && frontPriority && prioritySet.has(number) ? ' priority-seat' : ''}${isDragged ? ' seat-dragged' : ''}${isDragTarget ? ' seat-drag-target' : ''}`}
                           key={`${number ?? 'empty'}-${index}`}
                           data-testid={number === null ? `seat-empty-${seatNumber}` : `seat-${number}`}
                           data-seat-index={index}
-                          style={{ animationDelay: `${Math.min(index * 28, 480)}ms` }}
+                          style={{ animationDelay: `${Math.min(index * 28, 480)}ms`, transform: dragOffset, zIndex: isDragged ? 2 : undefined }}
                           onPointerDown={(event) => startSeatPointerDrag(event, index)}
                           onPointerMove={moveSeatPointerDrag}
                           onPointerUp={finishSeatPointerDrag}
