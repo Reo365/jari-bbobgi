@@ -219,7 +219,11 @@
 .history-section { margin:0 0 20px; padding:15px; border:1px solid #e5e4d7; border-radius:12px; background:#faf9f2; }
 .history-heading { display:flex; align-items:center; justify-content:space-between; gap:10px; margin-bottom:10px; }
 .history-title { display:flex; align-items:center; gap:7px; margin:0; color:#39584c; font-size:14px; font-weight:700; }
+.history-actions { display:flex; align-items:center; gap:8px; }
 .history-count { color:#8a958c; font-family:'DM Mono',monospace; font-size:11px; }
+.history-clear { display:flex; align-items:center; gap:4px; padding:3px 5px; border:0; border-radius:5px; background:transparent; color:#9a8178; font-size:11px; }
+.history-clear:hover:not(:disabled) { background:#f5e8e2; color:#b25a4a; }
+.history-clear:disabled { cursor:not-allowed; opacity:.42; }
 .history-list { display:flex; flex-direction:column; gap:6px; }
 .history-item { display:flex; align-items:stretch; gap:4px; min-width:0; }
 .history-load { display:flex; flex:1; min-width:0; flex-direction:column; align-items:flex-start; gap:2px; padding:8px 9px; border:1px solid transparent; border-radius:7px; background:transparent; color:#5f7066; text-align:left; }
@@ -278,7 +282,7 @@
 .seat-omitted .seat-number, .seat-omitted .seat-label { color:#a5a69d; }
 .seat[data-seat-index] { cursor:grab; touch-action:none; }
 .seat[data-seat-index]:active { cursor:grabbing; }
-.seat-dragged { position:relative; border-color:#6d9986; box-shadow:0 0 0 3px rgba(76,132,108,.14), 0 10px 24px rgba(35,88,76,.18); will-change:transform; }
+.seat-dragged { position:relative; animation:none; border-color:#6d9986; box-shadow:0 0 0 3px rgba(76,132,108,.14), 0 10px 24px rgba(35,88,76,.18); will-change:transform; }
 .seat-drag-target { border-color:#4d8c72; box-shadow:0 0 0 3px rgba(76,132,108,.18); transform:translateY(-2px); }
 .priority-legend { display:flex; align-items:center; gap:8px; margin:7px 2px 0; color:#8b6b54; font-size:13px; line-height:1.5; }
 .priority-legend-swatch { flex:none; width:12px; height:12px; border:1px solid #c87950; border-radius:3px; background:#f5d6bd; }

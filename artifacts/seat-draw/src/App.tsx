@@ -12,6 +12,7 @@ import {
   LayoutGrid,
   Shuffle,
   TicketCheck,
+  Trash2,
   X,
 } from 'lucide-react';
 import {
@@ -258,6 +259,12 @@ function Home() {
     window.localStorage.setItem(HISTORY_STORAGE_KEY, JSON.stringify(nextHistory));
   };
 
+  const clearHistory = () => {
+    setHistory([]);
+    setActiveRecordId(null);
+    window.localStorage.removeItem(HISTORY_STORAGE_KEY);
+  };
+
   const generate = () => {
     setDrawError('');
     if (countdown !== null) return;
@@ -457,7 +464,12 @@ function Home() {
             <section className="history-section" aria-labelledby="history-title">
               <div className="history-heading">
                 <h3 className="history-title" id="history-title"><History size={15} /> 이전 추첨</h3>
-                <span className="history-count">{history.length}/{MAX_HISTORY_ITEMS}</span>
+                <div className="history-actions">
+                  <span className="history-count">{history.length}/{MAX_HISTORY_ITEMS}</span>
+                  <button className="history-clear" type="button" onClick={clearHistory} disabled={history.length === 0}>
+                    <Trash2 size={12} /> 전체 삭제
+                  </button>
+                </div>
               </div>
               {history.length > 0 ? (
                 <div className="history-list">
