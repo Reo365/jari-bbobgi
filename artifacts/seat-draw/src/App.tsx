@@ -211,10 +211,12 @@ function Home() {
     event.preventDefault();
     setDragPosition({ x: event.clientX, y: event.clientY });
     if (draggedSeatRef.current === null) return;
-    const element = document.elementFromPoint(event.clientX, event.clientY);
-    const seatElement = element instanceof HTMLElement
-      ? element.closest<HTMLElement>('[data-seat-index]')
-      : null;
+    const sourceIndex = draggedSeatRef.current;
+    const seatElement = document.elementsFromPoint(event.clientX, event.clientY)
+      .map((element) => element instanceof HTMLElement
+        ? element.closest<HTMLElement>('[data-seat-index]')
+        : null)
+      .find((element) => element && Number(element.dataset.seatIndex) !== sourceIndex);
     const nextIndex = seatElement ? Number(seatElement.dataset.seatIndex) : null;
     if (nextIndex !== null && Number.isInteger(nextIndex)) {
       dragOverSeatRef.current = nextIndex;
@@ -602,7 +604,6 @@ function Home() {
                             ? (isExcluded ? <X className="excluded-seat-icon" size={22} aria-hidden="true" /> : <span className="seat-empty" aria-hidden="true" />)
                             : <>
                                 <span className="seat-number">{number}</span>
-                                <span className="seat-label">{rowIndex + 1}행 · {columnIndex + 1}열</span>
                               </>}
                         </div>
                       );
