@@ -437,46 +437,44 @@ function Home() {
                 </span>
               </label>
 
-              <div className="priority-number-group">
-                <div className="field-label"><label htmlFor="priority-numbers">앞자리 우선 번호</label></div>
-                <input
-                  className="exclude-input"
-                  id="priority-numbers"
-                  data-testid="input-priority-numbers"
-                  type="text"
-                  inputMode="text"
-                  autoComplete="off"
-                  placeholder="예: 2, 7, 12"
-                  value={priorityText}
-                  onChange={(event) => { setPriorityText(event.target.value); setAssignment(null); setDrawError(''); }}
-                  disabled={!frontPriority || isCounting}
-                  aria-invalid={frontPriority && (priority.invalid.length > 0 || unavailablePriorityNumbers.length > 0 || prioritySeatOverflow)}
-                  aria-describedby="priority-helper"
-                />
-                {frontPriority && priority.invalid.length > 0 && (
-                  <div className="validation-message" role="alert" data-testid="status-priority-validation">
-                    <AlertCircle size={13} />
-                    <span>{priority.invalid.join(', ')}은(는) 1부터 {validPool ? poolCount : 500} 사이의 정수가 아니에요.</span>
-                  </div>
-                )}
-                {frontPriority && unavailablePriorityNumbers.length > 0 && (
-                  <div className="validation-message" role="alert" data-testid="status-priority-excluded">
-                    <AlertCircle size={13} />
-                    <span>제외 번호에 포함된 {unavailablePriorityNumbers.join(', ')}번은 앞자리 우선 번호로 사용할 수 없어요.</span>
-                  </div>
-                )}
-                {frontPriority && prioritySeatOverflow && (
-                  <div className="validation-message" role="alert" data-testid="status-priority-capacity">
-                    <AlertCircle size={13} />
-                    <span>앞자리 우선 번호가 배정 가능한 좌석 {actualSeatCount}개보다 많아요.</span>
-                  </div>
-                )}
-                <p className="helper" id="priority-helper">
-                  {frontPriority
-                    ? '지정한 번호는 무작위로 앞자리에 배정됩니다.'
-                    : '앞자리 우선 설정을 켜면 번호를 입력할 수 있어요.'}
-                </p>
-              </div>
+              {frontPriority && (
+                <div className="priority-number-group">
+                  <div className="field-label"><label htmlFor="priority-numbers">앞자리 우선 번호</label></div>
+                  <input
+                    className="exclude-input"
+                    id="priority-numbers"
+                    data-testid="input-priority-numbers"
+                    type="text"
+                    inputMode="text"
+                    autoComplete="off"
+                    placeholder="예: 2, 7, 12"
+                    value={priorityText}
+                    onChange={(event) => { setPriorityText(event.target.value); setAssignment(null); setDrawError(''); }}
+                    disabled={isCounting}
+                    aria-invalid={priority.invalid.length > 0 || unavailablePriorityNumbers.length > 0 || prioritySeatOverflow}
+                    aria-describedby="priority-helper"
+                  />
+                  {priority.invalid.length > 0 && (
+                    <div className="validation-message" role="alert" data-testid="status-priority-validation">
+                      <AlertCircle size={13} />
+                      <span>{priority.invalid.join(', ')}은(는) 1부터 {validPool ? poolCount : 500} 사이의 정수가 아니에요.</span>
+                    </div>
+                  )}
+                  {unavailablePriorityNumbers.length > 0 && (
+                    <div className="validation-message" role="alert" data-testid="status-priority-excluded">
+                      <AlertCircle size={13} />
+                      <span>제외 번호에 포함된 {unavailablePriorityNumbers.join(', ')}번은 앞자리 우선 번호로 사용할 수 없어요.</span>
+                    </div>
+                  )}
+                  {prioritySeatOverflow && (
+                    <div className="validation-message" role="alert" data-testid="status-priority-capacity">
+                      <AlertCircle size={13} />
+                      <span>앞자리 우선 번호가 배정 가능한 좌석 {actualSeatCount}개보다 많아요.</span>
+                    </div>
+                  )}
+                  <p className="helper" id="priority-helper">지정한 번호는 무작위로 앞자리에 배정됩니다.</p>
+                </div>
+              )}
             </div>
 
             <section className="history-section" aria-labelledby="history-title">
