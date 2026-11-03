@@ -23,6 +23,7 @@ type CameraDirectorProps = {
 };
 
 const seatGap = 1.35;
+const DRAG_HOLD_DELAY = 300;
 
 function getSeatPosition(index: number, rows: number, columns: number) {
   const row = Math.floor(index / columns);
@@ -281,10 +282,33 @@ function Seat3D({
   const primaryColor = excluded ? '#763b35' : priority ? '#c8955f' : number === null ? '#8b5a3b' : '#a66f45';
   const accentColor = excluded ? '#934840' : priority ? '#e1b77b' : variant === 1 ? '#b17a4d' : '#805236';
   const revealStartRef = useRef<number | null>(null);
+  const dragTimerRef = useRef<number | null>(null);
 
   useEffect(() => {
     if (number !== null) revealStartRef.current = null;
+    return () => {
+      if (dragTimerRef.current !== null) window.clearTimeout(dragTimerRef.current);
+    };
   }, [number]);
+
+  const startHold = (event: { stopPropagation: () => void }, seatIndex: number) => {
+    event.stopPropagation();
+    if (number === null) return;
+    if (dragTimerRef.current !== null) window.clearTimeout(dragTimerRef.current);
+    dragTimerRef.current = window.setTimeout(() => {
+      onDragStart(seatIndex);
+      dragTimerRef.current = null;
+    }, DRAG_HOLD_DELAY);
+  };
+
+  const endHold = (event: { stopPropagation: () => void }, seatIndex: number) => {
+    event.stopPropagation();
+    if (dragTimerRef.current !== null) {
+      window.clearTimeout(dragTimerRef.current);
+      dragTimerRef.current = null;
+    }
+    onDrop(seatIndex);
+  };
 
   useFrame(({ clock }) => {
     if (!groupRef.current) return;
@@ -306,20 +330,15 @@ function Seat3D({
       ref={groupRef}
       position={[x, baseY, z]}
       rotation={[0, baseRotation, 0]}
-      onPointerDown={(event) => {
-        event.stopPropagation();
-        if (number !== null) onDragStart(index);
-      }}
+      onPointerDown={(event) => startHold(event, index)}
       onPointerOver={(event) => {
         event.stopPropagation();
         setHovered(true);
         onDragOver(index);
       }}
       onPointerOut={() => setHovered(false)}
-      onPointerUp={(event) => {
-        event.stopPropagation();
-        onDrop(index);
-      }}
+      onPointerUp={(event) => endHold(event, index)}
+      onPointerCancel={(event) => endHold(event, index)}
     >
       {false && variant === 0 && (
         <>
@@ -416,13 +435,16 @@ function Seat3D({
         </RoundedBox>
       </group>
       {(excluded || number !== null) && (
-        <Billboard position={[0, 0.82, 0.1]} follow lockX={false} lockY={false} lockZ={false}>
+        <Billboard position={[0, 1.15, 0.1]} follow lockX={false} lockY={false} lockZ={false} renderOrder={20}>
           <Text
-            fontSize={0.3}
+            fontSize={0.34}
             color={excluded ? '#ffb7c0' : priority ? '#112018' : '#d8f8ff'}
             anchorX="center"
             anchorY="middle"
             depthOffset={-2}
+            renderOrder={21}
+            material-depthTest={false}
+            material-depthWrite={false}
             outlineWidth={0.018}
             outlineColor={excluded ? '#2c1119' : priority ? '#5d8a35' : '#061016'}
           >
