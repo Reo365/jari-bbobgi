@@ -60,6 +60,109 @@ function CameraDirector({ rows, columns, onComplete }: CameraDirectorProps) {
   return null;
 }
 
+function ClassroomProps({ roomWidth, roomDepth, boardZ }: { roomWidth: number; roomDepth: number; boardZ: number }) {
+  const windowPositions = [-roomDepth * 0.22, roomDepth * 0.08, roomDepth * 0.38];
+
+  return (
+    <>
+      <mesh position={[0, 2.8, roomDepth / 2]} castShadow>
+        <boxGeometry args={[roomWidth, 5.8, 0.18]} />
+        <meshStandardMaterial color="#111c26" roughness={0.82} metalness={0.18} />
+      </mesh>
+      <mesh position={[-roomWidth / 2, 2.8, 0]} castShadow>
+        <boxGeometry args={[0.18, 5.8, roomDepth]} />
+        <meshStandardMaterial color="#111c26" roughness={0.82} metalness={0.18} />
+      </mesh>
+      <mesh position={[roomWidth / 2, 2.8, 0]} castShadow>
+        <boxGeometry args={[0.18, 5.8, roomDepth]} />
+        <meshStandardMaterial color="#111c26" roughness={0.82} metalness={0.18} />
+      </mesh>
+
+      {windowPositions.map((z, index) => (
+        <group key={`window-${index}`} position={[roomWidth / 2 - 0.12, 3.1, z]} rotation={[0, Math.PI / 2, 0]}>
+          <RoundedBox args={[2.8, 2.4, 0.12]} radius={0.05} smoothness={3}>
+            <meshStandardMaterial color="#162936" roughness={0.2} metalness={0.5} />
+          </RoundedBox>
+          <mesh position={[0, 0, 0.08]}>
+            <boxGeometry args={[2.35, 1.98, 0.04]} />
+            <meshBasicMaterial color="#6ce4e1" transparent opacity={0.2} />
+          </mesh>
+          <mesh position={[0, 0, 0.12]}>
+            <boxGeometry args={[0.035, 1.98, 0.05]} />
+            <meshBasicMaterial color="#a6d9d5" transparent opacity={0.5} />
+          </mesh>
+          <mesh position={[0, 0, 0.12]}>
+            <boxGeometry args={[2.35, 0.035, 0.05]} />
+            <meshBasicMaterial color="#a6d9d5" transparent opacity={0.5} />
+          </mesh>
+          <pointLight position={[-0.4, 0.3, 0.5]} intensity={3.5} distance={5} color="#69d9d2" />
+        </group>
+      ))}
+
+      <group position={[-roomWidth / 2 + 0.18, 2.05, roomDepth * 0.28]}>
+        <RoundedBox args={[0.24, 4.1, 2.05]} radius={0.08} smoothness={3} castShadow>
+          <meshStandardMaterial color="#26323d" roughness={0.48} metalness={0.48} />
+        </RoundedBox>
+        <mesh position={[0.14, 0, 0]}>
+          <boxGeometry args={[0.05, 3.45, 1.45]} />
+          <meshStandardMaterial color="#101a24" roughness={0.4} metalness={0.5} />
+        </mesh>
+        <mesh position={[0.18, -0.82, 0.04]}>
+          <sphereGeometry args={[0.11, 16, 16]} />
+          <meshStandardMaterial color="#b7f36a" emissive="#6b9d36" emissiveIntensity={0.4} metalness={0.5} />
+        </mesh>
+        <mesh position={[0.17, 1.1, 0.04]}>
+          <boxGeometry args={[0.04, 0.38, 0.78]} />
+          <meshBasicMaterial color="#5eead4" transparent opacity={0.75} />
+        </mesh>
+      </group>
+
+      <group position={[-roomWidth / 2 + 0.16, 1.85, roomDepth * 0.42]}>
+        <RoundedBox args={[0.24, 3.7, 1.65]} radius={0.07} smoothness={3} castShadow>
+          <meshStandardMaterial color="#303c47" roughness={0.45} metalness={0.42} />
+        </RoundedBox>
+        <mesh position={[0.16, 0, 0]}>
+          <boxGeometry args={[0.06, 3.05, 1.05]} />
+          <meshStandardMaterial color="#18232d" roughness={0.38} metalness={0.48} />
+        </mesh>
+        <mesh position={[0.2, -0.78, 0.04]}>
+          <sphereGeometry args={[0.1, 16, 16]} />
+          <meshStandardMaterial color="#ff6b7a" emissive="#a63e4e" emissiveIntensity={0.35} metalness={0.5} />
+        </mesh>
+      </group>
+
+      <group position={[0, 0.62, boardZ + 1.4]}>
+        <RoundedBox args={[3.5, 0.8, 1.25]} radius={0.1} smoothness={4} castShadow>
+          <meshStandardMaterial color="#273540" roughness={0.36} metalness={0.58} />
+        </RoundedBox>
+        <mesh position={[0, 0.51, 0.08]} rotation={[-0.16, 0, 0]}>
+          <boxGeometry args={[1.45, 0.08, 0.82]} />
+          <meshStandardMaterial color="#101b25" emissive="#123f4a" emissiveIntensity={0.35} roughness={0.28} metalness={0.5} />
+        </mesh>
+        <mesh position={[0, 0.5, 0.52]}>
+          <boxGeometry args={[1.15, 0.04, 0.03]} />
+          <meshBasicMaterial color="#5eead4" transparent opacity={0.85} />
+        </mesh>
+        {[-1.25, 1.25].map((x) => (
+          <mesh key={x} position={[x, -0.58, 0]}>
+            <boxGeometry args={[0.12, 1.0, 0.12]} />
+            <meshStandardMaterial color="#17252e" roughness={0.35} metalness={0.6} />
+          </mesh>
+        ))}
+      </group>
+
+      <group position={[0, 5.45, 0]}>
+        {[-roomWidth * 0.3, 0, roomWidth * 0.3].map((x) => (
+          <mesh key={x} position={[x, 0, 0]}>
+            <boxGeometry args={[3.6, 0.06, 0.22]} />
+            <meshBasicMaterial color="#c9f8f2" transparent opacity={0.42} />
+          </mesh>
+        ))}
+      </group>
+    </>
+  );
+}
+
 function Classroom({ rows, columns }: { rows: number; columns: number }) {
   const roomWidth = Math.max(18, columns * seatGap + 7);
   const roomDepth = Math.max(15, rows * seatGap + 8);
@@ -74,6 +177,7 @@ function Classroom({ rows, columns }: { rows: number; columns: number }) {
       <pointLight position={[-8, 5, boardZ + 3]} intensity={42} distance={20} color="#5eead4" />
       <pointLight position={[8, 3, 5]} intensity={28} distance={18} color="#b7f36a" />
       <Environment preset="studio" background={false} environmentIntensity={0.45} />
+      <ClassroomProps roomWidth={roomWidth} roomDepth={roomDepth} boardZ={boardZ} />
       <Sparkles count={90} scale={[roomWidth, 7, roomDepth]} size={2.2} speed={0.22} color="#d8f8ff" opacity={0.28} />
       <Float speed={0.65} rotationIntensity={0.12} floatIntensity={0.38}>
         <Torus args={[4.8, 0.025, 12, 72]} position={[-roomWidth * 0.32, 4.4, 1.8]} rotation={[Math.PI / 2, 0.2, 0.45]}>
