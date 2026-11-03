@@ -1,5 +1,5 @@
 import { Canvas, useFrame, useThree } from '@react-three/fiber';
-import { Billboard, ContactShadows, Environment, Float, OrbitControls, RoundedBox, Sparkles, Text, Torus } from '@react-three/drei';
+import { Billboard, ContactShadows, Environment, Float, OrbitControls, RoundedBox, Sky, Sparkles, Text, Torus } from '@react-three/drei';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Bloom, EffectComposer, Noise, Vignette } from '@react-three/postprocessing';
 import * as THREE from 'three';
@@ -67,15 +67,15 @@ function ClassroomProps({ roomWidth, roomDepth, boardZ }: { roomWidth: number; r
     <>
       <mesh position={[0, 2.8, roomDepth / 2]} castShadow>
         <boxGeometry args={[roomWidth, 5.8, 0.18]} />
-        <meshStandardMaterial color="#111c26" roughness={0.82} metalness={0.18} />
+        <meshStandardMaterial color="#111c26" transparent opacity={0} roughness={0.82} metalness={0.18} />
       </mesh>
       <mesh position={[-roomWidth / 2, 2.8, 0]} castShadow>
         <boxGeometry args={[0.18, 5.8, roomDepth]} />
-        <meshStandardMaterial color="#111c26" roughness={0.82} metalness={0.18} />
+        <meshStandardMaterial color="#111c26" transparent opacity={0} roughness={0.82} metalness={0.18} />
       </mesh>
       <mesh position={[roomWidth / 2, 2.8, 0]} castShadow>
         <boxGeometry args={[0.18, 5.8, roomDepth]} />
-        <meshStandardMaterial color="#111c26" roughness={0.82} metalness={0.18} />
+        <meshStandardMaterial color="#111c26" transparent opacity={0} roughness={0.82} metalness={0.18} />
       </mesh>
 
       {windowPositions.map((z, index) => (
@@ -177,7 +177,35 @@ function Classroom({ rows, columns }: { rows: number; columns: number }) {
       <pointLight position={[-8, 5, boardZ + 3]} intensity={42} distance={20} color="#5eead4" />
       <pointLight position={[8, 3, 5]} intensity={28} distance={18} color="#b7f36a" />
       <Environment preset="studio" background={false} environmentIntensity={0.45} />
+      <Sky sunPosition={[60, 28, -40]} turbidity={7} rayleigh={0.8} mieCoefficient={0.004} mieDirectionalG={0.82} />
       <ClassroomProps roomWidth={roomWidth} roomDepth={roomDepth} boardZ={boardZ} />
+      <group position={[0, 2.4, roomDepth / 2 + 5.5]}>
+        <RoundedBox args={[Math.max(roomWidth * 1.15, 20), 4.8, 1.2]} radius={0.12} smoothness={3}>
+          <meshStandardMaterial color="#8c9aa4" roughness={0.82} metalness={0.12} />
+        </RoundedBox>
+        {[-5.2, -2.6, 0, 2.6, 5.2].map((x) => (
+          <mesh key={x} position={[x, 0.55, -0.63]}>
+            <boxGeometry args={[1.3, 1.1, 0.06]} />
+            <meshBasicMaterial color="#6ce4e1" transparent opacity={0.55} />
+          </mesh>
+        ))}
+        <mesh position={[0, 2.1, -0.65]}>
+          <boxGeometry args={[4.2, 0.06, 0.08]} />
+          <meshBasicMaterial color="#b7f36a" transparent opacity={0.7} />
+        </mesh>
+      </group>
+      {[-1, 1].map((side) => (
+        <group key={side} position={[side * (roomWidth / 2 + 2.8), 0, roomDepth / 2 + 2.5]}>
+          <mesh position={[0, 2.1, 0]}>
+            <cylinderGeometry args={[0.18, 0.25, 4.2, 8]} />
+            <meshStandardMaterial color="#4c3429" roughness={0.9} />
+          </mesh>
+          <mesh position={[0, 4.2, 0]}>
+            <coneGeometry args={[1.65, 3.2, 8]} />
+            <meshStandardMaterial color="#2c765f" roughness={0.92} />
+          </mesh>
+        </group>
+      ))}
       <Sparkles count={90} scale={[roomWidth, 7, roomDepth]} size={2.2} speed={0.22} color="#d8f8ff" opacity={0.28} />
       <Float speed={0.65} rotationIntensity={0.12} floatIntensity={0.38}>
         <Torus args={[4.8, 0.025, 12, 72]} position={[-roomWidth * 0.32, 4.4, 1.8]} rotation={[Math.PI / 2, 0.2, 0.45]}>
@@ -249,6 +277,7 @@ function Seat3D({
   const baseY = excluded ? 0.16 : 0.38;
   const variant = index % 4;
   const baseRotation = ((index * 37) % 17 - 8) * 0.035;
+  const deskRotation = variant === 1 ? 0.025 : variant === 2 ? -0.02 : 0;
   const primaryColor = excluded ? '#431f2b' : priority ? '#b7f36a' : number === null ? '#263642' : '#1d2933';
   const accentColor = excluded ? '#ff6b7a' : priority ? '#d9ff9d' : variant === 1 ? '#5eead4' : '#405a6c';
   const revealStartRef = useRef<number | null>(null);
@@ -292,7 +321,7 @@ function Seat3D({
         onDrop(index);
       }}
     >
-      {variant === 0 && (
+      {false && variant === 0 && (
         <>
           <RoundedBox args={[1.16, 0.14, 0.88]} position={[0, 0.38, 0]} radius={0.1} smoothness={4} castShadow>
             <meshStandardMaterial color={primaryColor} emissive={isTarget ? '#77d7aa' : isDragging ? '#d58b54' : '#000000'} emissiveIntensity={isTarget || isDragging ? 0.5 : 0} roughness={0.4} metalness={0.16} />
@@ -311,7 +340,7 @@ function Seat3D({
           </RoundedBox>
         </>
       )}
-      {variant === 1 && (
+      {false && variant === 1 && (
         <>
           <mesh position={[0, 0.48, 0]} rotation={[0, Math.PI / 6, 0]} castShadow>
             <cylinderGeometry args={[0.76, 0.62, 0.16, 6]} />
@@ -327,7 +356,7 @@ function Seat3D({
           </mesh>
         </>
       )}
-      {variant === 2 && (
+      {false && variant === 2 && (
         <>
           <mesh position={[0, 0.44, 0]} rotation={[0.12, Math.PI / 4, 0]} castShadow>
             <octahedronGeometry args={[0.76, 0]} />
@@ -343,7 +372,7 @@ function Seat3D({
           </mesh>
         </>
       )}
-      {variant === 3 && (
+      {false && variant === 3 && (
         <>
           <mesh position={[0, 0.45, 0]} rotation={[0, Math.PI / 4, 0]} castShadow>
             <boxGeometry args={[1.02, 0.14, 1.02]} />
@@ -359,6 +388,33 @@ function Seat3D({
           </mesh>
         </>
       )}
+      <group rotation={[0, deskRotation, 0]}>
+        <RoundedBox args={[1.14, 0.12, 0.76]} position={[0, 0.86, 0]} radius={0.05} smoothness={3} castShadow>
+          <meshStandardMaterial color={primaryColor} emissive={isTarget ? '#5eead4' : isDragging ? '#b7f36a' : '#000000'} emissiveIntensity={isTarget || isDragging ? 0.4 : 0} roughness={0.4} metalness={0.38} />
+        </RoundedBox>
+        {[-0.4, 0.4].map((x) => (
+          <mesh key={`front-leg-${x}`} position={[x, 0.46, -0.25]} castShadow>
+            <boxGeometry args={[0.06, 0.72, 0.06]} />
+            <meshStandardMaterial color="#182631" roughness={0.35} metalness={0.72} />
+          </mesh>
+        ))}
+        {[-0.4, 0.4].map((x) => (
+          <mesh key={`back-leg-${x}`} position={[x, 0.46, 0.25]} castShadow>
+            <boxGeometry args={[0.06, 0.72, 0.06]} />
+            <meshStandardMaterial color="#182631" roughness={0.35} metalness={0.72} />
+          </mesh>
+        ))}
+        <mesh position={[0, 0.62, -0.32]}>
+          <boxGeometry args={[0.76, 0.34, 0.035]} />
+          <meshStandardMaterial color="#24343f" roughness={0.4} metalness={0.55} />
+        </mesh>
+        <RoundedBox args={[0.75, 0.11, 0.55]} position={[0, 0.43, 0.5]} radius={0.04} smoothness={3} castShadow>
+          <meshStandardMaterial color={accentColor} roughness={0.5} metalness={0.26} />
+        </RoundedBox>
+        <RoundedBox args={[0.72, 0.62, 0.1]} position={[0, 0.74, 0.75]} radius={0.04} smoothness={3} castShadow>
+          <meshStandardMaterial color={accentColor} roughness={0.48} metalness={0.2} />
+        </RoundedBox>
+      </group>
       {(excluded || number !== null) && (
         <Billboard position={[0, 0.82, 0.1]} follow lockX={false} lockY={false} lockZ={false}>
           <Text
