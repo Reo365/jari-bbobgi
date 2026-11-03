@@ -1,5 +1,5 @@
 import { Canvas, useFrame, useThree } from '@react-three/fiber';
-import { ContactShadows, Environment, Float, OrbitControls, RoundedBox, Sparkles, Text, Torus } from '@react-three/drei';
+import { Billboard, ContactShadows, Environment, Float, OrbitControls, RoundedBox, Sparkles, Text, Torus } from '@react-three/drei';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Bloom, EffectComposer, Noise, Vignette } from '@react-three/postprocessing';
 import * as THREE from 'three';
@@ -43,11 +43,13 @@ function CameraDirector({ rows, columns, onComplete }: CameraDirectorProps) {
   useFrame(({ clock }) => {
     if (completed.current) return;
     if (startTime.current === null) startTime.current = clock.getElapsedTime();
-    const progress = Math.min((clock.getElapsedTime() - startTime.current) / 2.4, 1);
-    const eased = 1 - Math.pow(1 - progress, 3);
-    const start = new THREE.Vector3(0, 5.2, centerZ + Math.max(10, rows * 1.1));
-    const finish = new THREE.Vector3(0, Math.max(8, rows * 0.75), centerZ + Math.max(12, rows * 1.3));
+    const progress = Math.min((clock.getElapsedTime() - startTime.current) / 3.2, 1);
+    const eased = 1 - Math.pow(1 - progress, 4);
+    const start = new THREE.Vector3(-Math.max(7, columns * 0.7), 4.4, centerZ + Math.max(8, rows * 0.9));
+    const finish = new THREE.Vector3(0, Math.max(7, rows * 0.72), centerZ + Math.max(11, rows * 1.25));
+    const arc = Math.sin(progress * Math.PI) * Math.max(2.5, columns * 0.22);
     camera.position.lerpVectors(start, finish, eased);
+    camera.position.x += arc;
     camera.lookAt(target);
     if (progress === 1) {
       completed.current = true;
@@ -145,12 +147,22 @@ function Seat3D({
   const baseRotation = ((index * 37) % 17 - 8) * 0.035;
   const primaryColor = excluded ? '#431f2b' : priority ? '#b7f36a' : number === null ? '#263642' : '#1d2933';
   const accentColor = excluded ? '#ff6b7a' : priority ? '#d9ff9d' : variant === 1 ? '#5eead4' : '#405a6c';
+  const revealStartRef = useRef<number | null>(null);
+
+  useEffect(() => {
+    if (number !== null) revealStartRef.current = null;
+  }, [number]);
 
   useFrame(({ clock }) => {
     if (!groupRef.current) return;
-    const targetY = isDragging ? baseY + 0.55 : baseY;
+    if (number !== null && revealStartRef.current === null) revealStartRef.current = clock.getElapsedTime();
+    const revealProgress = number === null || revealStartRef.current === null
+      ? 1
+      : THREE.MathUtils.clamp((clock.getElapsedTime() - revealStartRef.current - index * 0.035) / 0.62, 0, 1);
+    const revealEase = 1 - Math.pow(1 - revealProgress, 3);
+    const targetY = isDragging ? baseY + 0.55 : baseY + (1 - revealEase) * 1.7;
     groupRef.current.position.y = THREE.MathUtils.lerp(groupRef.current.position.y, targetY, 0.16);
-    const targetScale = isDragging || hovered ? 1.08 : 1;
+    const targetScale = isDragging || hovered ? 1.08 : revealEase;
     groupRef.current.scale.lerp(new THREE.Vector3(targetScale, targetScale, targetScale), 0.16);
     if (isDragging) groupRef.current.rotation.y = Math.sin(clock.getElapsedTime() * 3) * 0.035;
     else groupRef.current.rotation.y = THREE.MathUtils.lerp(groupRef.current.rotation.y, baseRotation, 0.16);
@@ -243,15 +255,21 @@ function Seat3D({
           </mesh>
         </>
       )}
-      {excluded ? (
-          <Text position={[0, 0.62, 0]} fontSize={0.34} color="#ffb7c0" anchorX="center" anchorY="middle">
-          X
-        </Text>
-      ) : number !== null ? (
-        <Text position={[0, 0.62, 0]} fontSize={0.3} color={priority ? '#112018' : '#d8f8ff'} anchorX="center" anchorY="middle">
-          {String(number)}
-        </Text>
-      ) : null}
+      {(excluded || number !== null) && (
+        <Billboard position={[0, 0.82, 0.1]} follow lockX={false} lockY={false} lockZ={false}>
+          <Text
+            fontSize={0.3}
+            color={excluded ? '#ffb7c0' : priority ? '#112018' : '#d8f8ff'}
+            anchorX="center"
+            anchorY="middle"
+            depthOffset={-2}
+            outlineWidth={0.018}
+            outlineColor={excluded ? '#2c1119' : priority ? '#5d8a35' : '#061016'}
+          >
+            {excluded ? 'X' : String(number)}
+          </Text>
+        </Billboard>
+      )}
     </group>
   );
 }
