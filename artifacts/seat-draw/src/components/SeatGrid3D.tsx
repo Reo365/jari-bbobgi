@@ -1,6 +1,7 @@
 import { Canvas, useFrame, useThree } from '@react-three/fiber';
-import { Float, OrbitControls, RoundedBox, Sparkles, Text, Torus } from '@react-three/drei';
+import { ContactShadows, Environment, Float, OrbitControls, RoundedBox, Sparkles, Text, Torus } from '@react-three/drei';
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { Bloom, EffectComposer, Noise, Vignette } from '@react-three/postprocessing';
 import * as THREE from 'three';
 
 type Assignment = Array<number | null>;
@@ -69,6 +70,7 @@ function Classroom({ rows, columns }: { rows: number; columns: number }) {
       <ambientLight intensity={1.5} color="#e7f2df" />
       <directionalLight position={[4, 12, 8]} intensity={3.5} color="#fff3d4" castShadow />
       <pointLight position={[-8, 5, boardZ + 3]} intensity={36} distance={20} color="#d58b54" />
+      <Environment preset="studio" background={false} environmentIntensity={0.45} />
       <Sparkles count={90} scale={[roomWidth, 7, roomDepth]} size={2.2} speed={0.22} color="#b4e8c2" opacity={0.42} />
       <Float speed={0.65} rotationIntensity={0.12} floatIntensity={0.38}>
         <Torus args={[4.8, 0.025, 12, 72]} position={[-roomWidth * 0.32, 4.4, 1.8]} rotation={[Math.PI / 2, 0.2, 0.45]}>
@@ -91,6 +93,7 @@ function Classroom({ rows, columns }: { rows: number; columns: number }) {
         <meshStandardMaterial color="#193f3b" roughness={0.78} metalness={0.08} />
       </mesh>
       <gridHelper args={[Math.max(roomWidth, roomDepth), 24, '#35645b', '#214c47']} position={[0, -0.1, 0]} />
+      <ContactShadows position={[0, -0.08, 0]} opacity={0.42} scale={Math.max(roomWidth, roomDepth)} blur={2.2} far={8} color="#061b1c" />
       <RoundedBox args={[Math.min(roomWidth - 2.5, 17), 3.35, 0.26]} position={[0, 3.2, boardZ]} radius={0.12} smoothness={5} castShadow>
         <meshStandardMaterial color="#b9824f" roughness={0.42} metalness={0.18} />
       </RoundedBox>
@@ -270,6 +273,11 @@ function SceneContents({
     <>
       <CameraDirector rows={rows} columns={columns} onComplete={() => setIntroDone(true)} />
       <Classroom rows={rows} columns={columns} />
+      <EffectComposer multisampling={4}>
+        <Bloom intensity={0.65} luminanceThreshold={0.36} luminanceSmoothing={0.28} mipmapBlur />
+        <Vignette eskil={false} offset={0.16} darkness={0.72} />
+        <Noise opacity={0.035} premultiply />
+      </EffectComposer>
       {Array.from({ length: seatCount }, (_, index) => {
         const number = assignment?.[index] ?? null;
         return (
