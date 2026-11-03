@@ -1,5 +1,5 @@
 import { Canvas, useFrame, useThree } from '@react-three/fiber';
-import { OrbitControls, RoundedBox, Text } from '@react-three/drei';
+import { Float, OrbitControls, RoundedBox, Sparkles, Text, Torus } from '@react-three/drei';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import * as THREE from 'three';
 
@@ -69,20 +69,39 @@ function Classroom({ rows, columns }: { rows: number; columns: number }) {
       <ambientLight intensity={1.5} color="#e7f2df" />
       <directionalLight position={[4, 12, 8]} intensity={3.5} color="#fff3d4" castShadow />
       <pointLight position={[-8, 5, boardZ + 3]} intensity={36} distance={20} color="#d58b54" />
+      <Sparkles count={90} scale={[roomWidth, 7, roomDepth]} size={2.2} speed={0.22} color="#b4e8c2" opacity={0.42} />
+      <Float speed={0.65} rotationIntensity={0.12} floatIntensity={0.38}>
+        <Torus args={[4.8, 0.025, 12, 72]} position={[-roomWidth * 0.32, 4.4, 1.8]} rotation={[Math.PI / 2, 0.2, 0.45]}>
+          <meshBasicMaterial color="#62d7ad" transparent opacity={0.38} />
+        </Torus>
+        <Torus args={[3.2, 0.018, 12, 72]} position={[roomWidth * 0.34, 3.8, -1.6]} rotation={[Math.PI / 2, -0.3, -0.35]}>
+          <meshBasicMaterial color="#e0a160" transparent opacity={0.32} />
+        </Torus>
+      </Float>
+      <mesh position={[-roomWidth / 2 + 0.3, 3.5, 0]}>
+        <boxGeometry args={[0.08, 7, roomDepth]} />
+        <meshBasicMaterial color="#4bd2a1" transparent opacity={0.24} />
+      </mesh>
+      <mesh position={[roomWidth / 2 - 0.3, 3.5, 0]}>
+        <boxGeometry args={[0.08, 7, roomDepth]} />
+        <meshBasicMaterial color="#e0a160" transparent opacity={0.18} />
+      </mesh>
       <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.12, 0]} receiveShadow>
         <planeGeometry args={[roomWidth, roomDepth]} />
         <meshStandardMaterial color="#193f3b" roughness={0.78} metalness={0.08} />
       </mesh>
       <gridHelper args={[Math.max(roomWidth, roomDepth), 24, '#35645b', '#214c47']} position={[0, -0.1, 0]} />
-      <mesh position={[0, 3.2, boardZ]} castShadow>
-        <boxGeometry args={[Math.min(roomWidth - 3, 16), 3.1, 0.2]} />
-        <meshStandardMaterial color="#163a38" roughness={0.65} metalness={0.12} />
+      <RoundedBox args={[Math.min(roomWidth - 2.5, 17), 3.35, 0.26]} position={[0, 3.2, boardZ]} radius={0.12} smoothness={5} castShadow>
+        <meshStandardMaterial color="#b9824f" roughness={0.42} metalness={0.18} />
+      </RoundedBox>
+      <RoundedBox args={[Math.min(roomWidth - 3.2, 16.3), 2.72, 0.3]} position={[0, 3.27, boardZ + 0.16]} radius={0.07} smoothness={4}>
+        <meshStandardMaterial color="#123d3a" roughness={0.72} metalness={0.1} />
+      </RoundedBox>
+      <mesh position={[0, 1.43, boardZ + 0.22]} castShadow>
+        <boxGeometry args={[Math.min(roomWidth - 2, 17), 0.14, 0.38]} />
+        <meshStandardMaterial color="#d59a5f" roughness={0.38} metalness={0.22} />
       </mesh>
-      <mesh position={[0, 1.45, boardZ + 0.05]}>
-        <boxGeometry args={[Math.min(roomWidth - 2, 17), 0.12, 0.3]} />
-        <meshStandardMaterial color="#c58a53" roughness={0.46} metalness={0.18} />
-      </mesh>
-      <Text position={[0, 3.2, boardZ - 0.16]} rotation={[0, 0, 0]} fontSize={0.48} color="#f6f0d8" anchorX="center" anchorY="middle">
+      <Text position={[0, 3.27, boardZ + 0.34]} rotation={[0, 0, 0]} fontSize={0.48} color="#f6f0d8" anchorX="center" anchorY="middle">
         칠판
       </Text>
     </>
@@ -148,7 +167,7 @@ function Seat3D({
         onDrop(index);
       }}
     >
-      <RoundedBox args={[1.05, 0.44, 0.92]} radius={0.12} smoothness={4} castShadow>
+      <RoundedBox args={[1.16, 0.14, 0.88]} position={[0, 0.38, 0]} radius={0.1} smoothness={4} castShadow>
         <meshStandardMaterial
           color={excluded ? '#7b403b' : priority ? '#c87950' : number === null ? '#406762' : '#f5f0dc'}
           emissive={isTarget ? '#77d7aa' : isDragging ? '#d58b54' : '#000000'}
@@ -157,16 +176,24 @@ function Seat3D({
           metalness={0.16}
         />
       </RoundedBox>
-      <mesh position={[0, 0.3, 0.08]} castShadow>
-        <boxGeometry args={[0.8, 0.16, 0.55]} />
-        <meshStandardMaterial color={excluded ? '#a84e46' : priority ? '#e5a078' : '#6fa08f'} roughness={0.55} />
-      </mesh>
+      {[[-0.42, 0.2, -0.29], [0.42, 0.2, -0.29], [-0.42, 0.2, 0.29], [0.42, 0.2, 0.29]].map(([legX, legY, legZ]) => (
+        <mesh key={`${legX}-${legZ}`} position={[legX, legY, legZ]} castShadow>
+          <boxGeometry args={[0.07, 0.38, 0.07]} />
+          <meshStandardMaterial color="#244f4a" roughness={0.52} metalness={0.18} />
+        </mesh>
+      ))}
+      <RoundedBox args={[0.78, 0.12, 0.58]} position={[0, 0.12, 0.62]} radius={0.08} smoothness={4} castShadow>
+        <meshStandardMaterial color={excluded ? '#713a38' : priority ? '#b76549' : '#315b55'} roughness={0.52} metalness={0.12} />
+      </RoundedBox>
+      <RoundedBox args={[0.78, 0.5, 0.1]} position={[0, 0.42, 0.84]} radius={0.06} smoothness={3} castShadow>
+        <meshStandardMaterial color={excluded ? '#8b4540' : priority ? '#cb7655' : '#376a62'} roughness={0.55} metalness={0.1} />
+      </RoundedBox>
       {excluded ? (
-        <Text position={[0, 0.58, 0]} fontSize={0.34} color="#ffd8c4" anchorX="center" anchorY="middle">
+        <Text position={[0, 0.62, 0]} fontSize={0.34} color="#ffd8c4" anchorX="center" anchorY="middle">
           X
         </Text>
       ) : number !== null ? (
-        <Text position={[0, 0.58, 0]} fontSize={0.3} color={priority ? '#fff1df' : '#123b38'} anchorX="center" anchorY="middle">
+        <Text position={[0, 0.62, 0]} fontSize={0.3} color={priority ? '#fff1df' : '#123b38'} anchorX="center" anchorY="middle">
           {String(number)}
         </Text>
       ) : null}
