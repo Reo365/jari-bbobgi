@@ -225,19 +225,19 @@ function Classroom({ rows, columns }: { rows: number; columns: number }) {
       </mesh>
       <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.12, 0]} receiveShadow>
         <planeGeometry args={[roomWidth, roomDepth]} />
-        <meshStandardMaterial color="#0d141c" roughness={0.7} metalness={0.32} />
+        <meshStandardMaterial color="#62645b" roughness={0.9} metalness={0.02} />
       </mesh>
-      <gridHelper args={[Math.max(roomWidth, roomDepth), 24, '#31414e', '#151f28']} position={[0, -0.1, 0]} />
+      <gridHelper args={[Math.max(roomWidth, roomDepth), 24, '#8e8d80', '#74746a']} position={[0, -0.1, 0]} />
       <ContactShadows position={[0, -0.08, 0]} opacity={0.42} scale={Math.max(roomWidth, roomDepth)} blur={2.2} far={8} color="#061b1c" />
       <RoundedBox args={[Math.min(roomWidth - 2.5, 17), 3.35, 0.26]} position={[0, 3.2, boardZ]} radius={0.12} smoothness={5} castShadow>
-        <meshStandardMaterial color="#283542" roughness={0.28} metalness={0.68} />
+        <meshStandardMaterial color="#805936" roughness={0.74} metalness={0.04} />
       </RoundedBox>
       <RoundedBox args={[Math.min(roomWidth - 3.2, 16.3), 2.72, 0.3]} position={[0, 3.27, boardZ + 0.16]} radius={0.07} smoothness={4}>
-        <meshStandardMaterial color="#060b11" emissive="#0d4b52" emissiveIntensity={0.32} roughness={0.42} metalness={0.5} />
+        <meshStandardMaterial color="#1f5a3e" emissive="#0c2d20" emissiveIntensity={0.22} roughness={0.78} metalness={0.03} />
       </RoundedBox>
       <mesh position={[0, 1.43, boardZ + 0.22]} castShadow>
         <boxGeometry args={[Math.min(roomWidth - 2, 17), 0.14, 0.38]} />
-        <meshStandardMaterial color="#5eead4" emissive="#1a766e" emissiveIntensity={0.34} roughness={0.24} metalness={0.78} />
+        <meshStandardMaterial color="#9a6a40" roughness={0.68} metalness={0.04} />
       </mesh>
       <Text position={[0, 3.27, boardZ + 0.34]} rotation={[0, 0, 0]} fontSize={0.42} color="#d8f8ff" anchorX="center" anchorY="middle">
         SEAT / SYSTEM
@@ -278,8 +278,8 @@ function Seat3D({
   const variant = index % 4;
   const baseRotation = ((index * 37) % 17 - 8) * 0.035;
   const deskRotation = variant === 1 ? 0.025 : variant === 2 ? -0.02 : 0;
-  const primaryColor = excluded ? '#431f2b' : priority ? '#b7f36a' : number === null ? '#263642' : '#1d2933';
-  const accentColor = excluded ? '#ff6b7a' : priority ? '#d9ff9d' : variant === 1 ? '#5eead4' : '#405a6c';
+  const primaryColor = excluded ? '#763b35' : priority ? '#c8955f' : number === null ? '#8b5a3b' : '#a66f45';
+  const accentColor = excluded ? '#934840' : priority ? '#e1b77b' : variant === 1 ? '#b17a4d' : '#805236';
   const revealStartRef = useRef<number | null>(null);
 
   useEffect(() => {
@@ -348,7 +348,7 @@ function Seat3D({
           </mesh>
           <mesh position={[0, 0.22, 0]} castShadow>
             <coneGeometry args={[0.42, 0.52, 5]} />
-            <meshStandardMaterial color="#182631" roughness={0.34} metalness={0.72} />
+              <meshStandardMaterial color="#65432c" roughness={0.76} metalness={0.03} />
           </mesh>
           <mesh position={[0, 0.1, 0.54]} rotation={[-0.12, 0, 0]} castShadow>
             <boxGeometry args={[0.7, 0.1, 0.48]} />
@@ -395,18 +395,18 @@ function Seat3D({
         {[-0.4, 0.4].map((x) => (
           <mesh key={`front-leg-${x}`} position={[x, 0.46, -0.25]} castShadow>
             <boxGeometry args={[0.06, 0.72, 0.06]} />
-            <meshStandardMaterial color="#182631" roughness={0.35} metalness={0.72} />
+            <meshStandardMaterial color="#65432c" roughness={0.76} metalness={0.03} />
           </mesh>
         ))}
         {[-0.4, 0.4].map((x) => (
           <mesh key={`back-leg-${x}`} position={[x, 0.46, 0.25]} castShadow>
             <boxGeometry args={[0.06, 0.72, 0.06]} />
-            <meshStandardMaterial color="#182631" roughness={0.35} metalness={0.72} />
+            <meshStandardMaterial color="#65432c" roughness={0.76} metalness={0.03} />
           </mesh>
         ))}
         <mesh position={[0, 0.62, -0.32]}>
           <boxGeometry args={[0.76, 0.34, 0.035]} />
-          <meshStandardMaterial color="#24343f" roughness={0.4} metalness={0.55} />
+          <meshStandardMaterial color="#70492f" roughness={0.72} metalness={0.03} />
         </mesh>
         <RoundedBox args={[0.75, 0.11, 0.55]} position={[0, 0.43, 0.5]} radius={0.04} smoothness={3} castShadow>
           <meshStandardMaterial color={accentColor} roughness={0.5} metalness={0.26} />
