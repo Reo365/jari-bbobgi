@@ -12,6 +12,8 @@ import {
   History,
   Info,
   LayoutGrid,
+  PanelLeftClose,
+  PanelLeftOpen,
   Printer,
   Save,
   Shuffle,
@@ -132,6 +134,9 @@ function Home() {
   const [saveFeedback, setSaveFeedback] = useState(false);
   const [viewMode, setViewMode] = useState<ViewMode>(() => (
     window.localStorage.getItem('jari-bbobgi-view-mode') === '3d' ? '3d' : 'normal'
+  ));
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(() => (
+    window.localStorage.getItem('jari-bbobgi-sidebar-collapsed') === 'true'
   ));
   const draggedSeatRef = useRef<number | null>(null);
   const dragOverSeatRef = useRef<number | null>(null);
@@ -319,6 +324,14 @@ function Home() {
   const changeViewMode = (nextMode: ViewMode) => {
     setViewMode(nextMode);
     window.localStorage.setItem('jari-bbobgi-view-mode', nextMode);
+  };
+
+  const toggleSidebar = () => {
+    setSidebarCollapsed((current) => {
+      const next = !current;
+      window.localStorage.setItem('jari-bbobgi-sidebar-collapsed', String(next));
+      return next;
+    });
   };
 
   const formatResult = () => {
@@ -515,7 +528,7 @@ function Home() {
   const excludedSeatSummary = [...excludedSeatNumbers].sort((a, b) => a - b);
 
   return (
-    <main className={`page-shell${viewMode === '3d' ? ' page-shell-3d' : ''}`}>
+    <main className={`page-shell${viewMode === '3d' ? ' page-shell-3d' : ''}${sidebarCollapsed ? ' sidebar-collapsed' : ''}`}>
       <div className="page-wrap">
         <header className="masthead">
           <div className="brand" aria-label="자리 뽑기">
@@ -523,11 +536,19 @@ function Home() {
             <h1 className="brand-name" id="page-title">자리 뽑기</h1>
           </div>
         </header>
+        {sidebarCollapsed && (
+          <button className="sidebar-reopen" type="button" onClick={toggleSidebar} aria-label="사이드바 열기" title="사이드바 열기">
+            <PanelLeftOpen size={17} />
+          </button>
+        )}
 
         <div className="workspace">
           <section className="panel setup-panel" aria-labelledby="setup-title">
             <div className="panel-title-row">
               <h2 className="panel-title" id="setup-title"><LayoutGrid size={18} /> 배정 조건</h2>
+              <button className="sidebar-collapse" type="button" onClick={toggleSidebar} aria-label="사이드바 접기" title="사이드바 접기">
+                <PanelLeftClose size={17} />
+              </button>
             </div>
 
             <section className="settings-group" aria-labelledby="basic-settings-title">
