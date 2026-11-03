@@ -515,7 +515,7 @@ function Home() {
   const excludedSeatSummary = [...excludedSeatNumbers].sort((a, b) => a - b);
 
   return (
-    <main className="page-shell">
+    <main className={`page-shell${viewMode === '3d' ? ' page-shell-3d' : ''}`}>
       <div className="page-wrap">
         <header className="masthead">
           <div className="brand" aria-label="자리 뽑기">
