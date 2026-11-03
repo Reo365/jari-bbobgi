@@ -137,6 +137,10 @@ function Seat3D({
   const groupRef = useRef<THREE.Group>(null);
   const [hovered, setHovered] = useState(false);
   const baseY = excluded ? 0.16 : 0.38;
+  const variant = index % 4;
+  const baseRotation = ((index * 37) % 17 - 8) * 0.035;
+  const primaryColor = excluded ? '#7b403b' : priority ? '#c87950' : number === null ? '#406762' : '#f5f0dc';
+  const accentColor = excluded ? '#a84e46' : priority ? '#e5a078' : variant === 1 ? '#77c9ab' : '#6fa08f';
 
   useFrame(({ clock }) => {
     if (!groupRef.current) return;
@@ -145,13 +149,14 @@ function Seat3D({
     const targetScale = isDragging || hovered ? 1.08 : 1;
     groupRef.current.scale.lerp(new THREE.Vector3(targetScale, targetScale, targetScale), 0.16);
     if (isDragging) groupRef.current.rotation.y = Math.sin(clock.getElapsedTime() * 3) * 0.035;
-    else groupRef.current.rotation.y = THREE.MathUtils.lerp(groupRef.current.rotation.y, 0, 0.16);
+    else groupRef.current.rotation.y = THREE.MathUtils.lerp(groupRef.current.rotation.y, baseRotation, 0.16);
   });
 
   return (
     <group
       ref={groupRef}
       position={[x, baseY, z]}
+      rotation={[0, baseRotation, 0]}
       onPointerDown={(event) => {
         event.stopPropagation();
         if (number !== null) onDragStart(index);
@@ -167,27 +172,73 @@ function Seat3D({
         onDrop(index);
       }}
     >
-      <RoundedBox args={[1.16, 0.14, 0.88]} position={[0, 0.38, 0]} radius={0.1} smoothness={4} castShadow>
-        <meshStandardMaterial
-          color={excluded ? '#7b403b' : priority ? '#c87950' : number === null ? '#406762' : '#f5f0dc'}
-          emissive={isTarget ? '#77d7aa' : isDragging ? '#d58b54' : '#000000'}
-          emissiveIntensity={isTarget || isDragging ? 0.5 : 0}
-          roughness={0.4}
-          metalness={0.16}
-        />
-      </RoundedBox>
-      {[[-0.42, 0.2, -0.29], [0.42, 0.2, -0.29], [-0.42, 0.2, 0.29], [0.42, 0.2, 0.29]].map(([legX, legY, legZ]) => (
-        <mesh key={`${legX}-${legZ}`} position={[legX, legY, legZ]} castShadow>
-          <boxGeometry args={[0.07, 0.38, 0.07]} />
-          <meshStandardMaterial color="#244f4a" roughness={0.52} metalness={0.18} />
-        </mesh>
-      ))}
-      <RoundedBox args={[0.78, 0.12, 0.58]} position={[0, 0.12, 0.62]} radius={0.08} smoothness={4} castShadow>
-        <meshStandardMaterial color={excluded ? '#713a38' : priority ? '#b76549' : '#315b55'} roughness={0.52} metalness={0.12} />
-      </RoundedBox>
-      <RoundedBox args={[0.78, 0.5, 0.1]} position={[0, 0.42, 0.84]} radius={0.06} smoothness={3} castShadow>
-        <meshStandardMaterial color={excluded ? '#8b4540' : priority ? '#cb7655' : '#376a62'} roughness={0.55} metalness={0.1} />
-      </RoundedBox>
+      {variant === 0 && (
+        <>
+          <RoundedBox args={[1.16, 0.14, 0.88]} position={[0, 0.38, 0]} radius={0.1} smoothness={4} castShadow>
+            <meshStandardMaterial color={primaryColor} emissive={isTarget ? '#77d7aa' : isDragging ? '#d58b54' : '#000000'} emissiveIntensity={isTarget || isDragging ? 0.5 : 0} roughness={0.4} metalness={0.16} />
+          </RoundedBox>
+          {[[-0.42, 0.2, -0.29], [0.42, 0.2, -0.29], [-0.42, 0.2, 0.29], [0.42, 0.2, 0.29]].map(([legX, legY, legZ]) => (
+            <mesh key={`${legX}-${legZ}`} position={[legX, legY, legZ]} castShadow>
+              <boxGeometry args={[0.07, 0.38, 0.07]} />
+              <meshStandardMaterial color="#244f4a" roughness={0.52} metalness={0.18} />
+            </mesh>
+          ))}
+          <RoundedBox args={[0.78, 0.12, 0.58]} position={[0, 0.12, 0.62]} radius={0.08} smoothness={4} castShadow>
+            <meshStandardMaterial color={accentColor} roughness={0.52} metalness={0.12} />
+          </RoundedBox>
+          <RoundedBox args={[0.78, 0.5, 0.1]} position={[0, 0.42, 0.84]} radius={0.06} smoothness={3} castShadow>
+            <meshStandardMaterial color={accentColor} roughness={0.55} metalness={0.1} />
+          </RoundedBox>
+        </>
+      )}
+      {variant === 1 && (
+        <>
+          <mesh position={[0, 0.48, 0]} rotation={[0, Math.PI / 6, 0]} castShadow>
+            <cylinderGeometry args={[0.76, 0.62, 0.16, 6]} />
+            <meshStandardMaterial color={primaryColor} emissive={isTarget ? '#77d7aa' : '#000000'} emissiveIntensity={isTarget ? 0.55 : 0} roughness={0.34} metalness={0.24} />
+          </mesh>
+          <mesh position={[0, 0.22, 0]} castShadow>
+            <coneGeometry args={[0.42, 0.52, 5]} />
+            <meshStandardMaterial color="#284f4b" roughness={0.46} metalness={0.24} />
+          </mesh>
+          <mesh position={[0, 0.1, 0.54]} rotation={[-0.12, 0, 0]} castShadow>
+            <boxGeometry args={[0.7, 0.1, 0.48]} />
+            <meshStandardMaterial color={accentColor} roughness={0.45} metalness={0.18} />
+          </mesh>
+        </>
+      )}
+      {variant === 2 && (
+        <>
+          <mesh position={[0, 0.44, 0]} rotation={[0.12, Math.PI / 4, 0]} castShadow>
+            <octahedronGeometry args={[0.76, 0]} />
+            <meshStandardMaterial color={primaryColor} emissive={isDragging ? '#d58b54' : '#000000'} emissiveIntensity={isDragging ? 0.6 : 0} roughness={0.3} metalness={0.28} />
+          </mesh>
+          <mesh position={[0, 0.12, 0]} rotation={[0, Math.PI / 4, 0]} castShadow>
+            <coneGeometry args={[0.3, 0.6, 4]} />
+            <meshStandardMaterial color="#244f4a" roughness={0.5} metalness={0.2} />
+          </mesh>
+          <mesh position={[0, 0.3, 0.64]} rotation={[0.05, 0, 0]} castShadow>
+            <boxGeometry args={[0.62, 0.1, 0.5]} />
+            <meshStandardMaterial color={accentColor} roughness={0.5} metalness={0.18} />
+          </mesh>
+        </>
+      )}
+      {variant === 3 && (
+        <>
+          <mesh position={[0, 0.45, 0]} rotation={[0, Math.PI / 4, 0]} castShadow>
+            <boxGeometry args={[1.02, 0.14, 1.02]} />
+            <meshStandardMaterial color={primaryColor} emissive={isTarget ? '#77d7aa' : '#000000'} emissiveIntensity={isTarget ? 0.55 : 0} roughness={0.36} metalness={0.22} />
+          </mesh>
+          <mesh position={[0, 0.17, 0]} rotation={[0, 0, Math.PI / 4]} castShadow>
+            <coneGeometry args={[0.52, 0.58, 4]} />
+            <meshStandardMaterial color="#214846" roughness={0.48} metalness={0.26} />
+          </mesh>
+          <mesh position={[0, 0.34, 0.62]} rotation={[0.04, 0.1, 0]} castShadow>
+            <boxGeometry args={[0.74, 0.1, 0.48]} />
+            <meshStandardMaterial color={accentColor} roughness={0.48} metalness={0.2} />
+          </mesh>
+        </>
+      )}
       {excluded ? (
         <Text position={[0, 0.62, 0]} fontSize={0.34} color="#ffd8c4" anchorX="center" anchorY="middle">
           X
