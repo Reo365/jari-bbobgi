@@ -766,7 +766,7 @@ function Home() {
               </div>
             )}
 
-            {viewMode === '3d' && !isCounting && (
+            {viewMode === '3d' && (
               validDimensions ? (
                 <div className="scene3d-content" data-testid="result-seating-3d">
                   <Suspense fallback={<div className="scene3d-loading">3D 교실을 준비하는 중...</div>}>
