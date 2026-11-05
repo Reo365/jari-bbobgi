@@ -28,8 +28,11 @@ const DRAG_HOLD_DELAY = 300;
 function getSeatPosition(index: number, rows: number, columns: number) {
   const row = Math.floor(index / columns);
   const column = index % columns;
+  const aisleCountBefore = Math.floor(column / 2);
+  const visualColumn = column + aisleCountBefore * 0.72;
+  const visualColumnCount = columns + Math.floor((columns - 1) / 2) * 0.72;
   return {
-    x: (column - (columns - 1) / 2) * seatGap,
+    x: (visualColumn - (visualColumnCount - 1) / 2) * seatGap,
     z: (row - (rows - 1) / 2) * seatGap,
   };
 }

@@ -76,6 +76,24 @@ function parseNumberList(value: string, participantCount: number) {
   return { invalid, numbers };
 }
 
+function getSeatGridPlacement(index: number, columnCount: number) {
+  const rowIndex = Math.floor(index / columnCount);
+  const columnIndex = index % columnCount;
+  const aisleCountBefore = Math.floor(columnIndex / 2);
+  return {
+    rowIndex,
+    columnIndex,
+    gridColumn: columnIndex + aisleCountBefore + 1,
+    gridRow: rowIndex + 1,
+  };
+}
+
+function getSeatGridTemplate(columnCount: number) {
+  return Array.from({ length: columnCount + Math.floor((columnCount - 1) / 2) }, (_, index) => (
+    index > 0 && index % 3 === 2 ? 'minmax(24px, .42fr)' : 'minmax(57px, 1fr)'
+  )).join(' ');
+}
+
 function readDrawHistory(): DrawRecord[] {
   try {
     const stored = window.localStorage.getItem(HISTORY_STORAGE_KEY);
@@ -154,6 +172,7 @@ function Home() {
     && Number.isInteger(columnCount) && columnCount >= 1 && columnCount <= 20;
   const validPool = Number.isInteger(poolCount) && poolCount >= 1 && poolCount <= 500;
   const seatCount = validDimensions ? rowCount * columnCount : 0;
+  const seatGridTemplate = getSeatGridTemplate(columnCount);
   const excluded = useMemo(() => parseNumberList(excludedText, poolCount), [excludedText, poolCount]);
   const priority = useMemo(() => parseNumberList(priorityText, poolCount), [priorityText, poolCount]);
   const excludedSet = useMemo(() => new Set(excluded.numbers), [excluded.numbers]);
@@ -748,10 +767,9 @@ function Home() {
                 </div>
                 {validDimensions ? (
                   <div className="grid-scroll">
-                    <div className="seat-grid preview-seat-grid" style={{ gridTemplateColumns: `repeat(${columnCount}, minmax(57px, 1fr))` }}>
+                    <div className="seat-grid preview-seat-grid" style={{ gridTemplateColumns: seatGridTemplate }}>
                       {Array.from({ length: seatCount }, (_, index) => {
-                        const rowIndex = Math.floor(index / columnCount);
-                        const columnIndex = index % columnCount;
+                        const { rowIndex, columnIndex, gridColumn, gridRow } = getSeatGridPlacement(index, columnCount);
                         const seatNumber = index + 1;
                         const isExcluded = excludedSeatNumbers.has(seatNumber);
                         const availablePosition = availableSeatIndices.indexOf(index);
@@ -765,6 +783,7 @@ function Home() {
                             onClick={() => toggleExcludedSeat(seatNumber)}
                             aria-pressed={isExcluded}
                             aria-label={`좌석 ${seatNumber}번, ${rowIndex + 1}행 ${columnIndex + 1}열${isExcluded ? ', 제외 좌석' : ', 제외 좌석으로 지정하려면 선택'}`}
+                            style={{ gridColumn, gridRow }}
                           >
                             {isExcluded ? <X className="excluded-seat-icon" size={22} aria-hidden="true" /> : <span className="seat-empty" aria-hidden="true" />}
                           </button>
@@ -822,10 +841,9 @@ function Home() {
                   <span>칠판</span>
                 </div>
                 <div className="grid-scroll">
-                  <div className="seat-grid" style={{ gridTemplateColumns: `repeat(${columnCount}, minmax(57px, 1fr))` }}>
+                  <div className="seat-grid" style={{ gridTemplateColumns: seatGridTemplate }}>
                     {assignment.map((number, index) => {
-                      const rowIndex = Math.floor(index / columnCount);
-                      const columnIndex = index % columnCount;
+                      const { rowIndex, columnIndex, gridColumn, gridRow } = getSeatGridPlacement(index, columnCount);
                       const seatNumber = index + 1;
                       const isExcluded = excludedSeatNumbers.has(seatNumber);
                       const isDragged = draggedSeatIndex === index;
@@ -839,7 +857,7 @@ function Home() {
                           key={`${number ?? 'empty'}-${index}`}
                           data-testid={number === null ? `seat-empty-${seatNumber}` : `seat-${number}`}
                           data-seat-index={index}
-                          style={{ animationDelay: `${Math.min(index * 28, 480)}ms`, transform: dragOffset, zIndex: isDragged ? 2 : undefined }}
+                          style={{ animationDelay: `${Math.min(index * 28, 480)}ms`, transform: dragOffset, zIndex: isDragged ? 2 : undefined, gridColumn, gridRow }}
                           onPointerDown={(event) => startSeatPointerDrag(event, index)}
                           onPointerMove={moveSeatPointerDrag}
                           onPointerUp={finishSeatPointerDrag}
